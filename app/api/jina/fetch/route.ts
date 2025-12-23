@@ -338,17 +338,16 @@ async function fetchFromJinaPremium(
             "🔑 Fetching with Jina PREMIUM API (cf-browser-rendering + readerlm-v2)"
         );
 
-        const response = await fetch("https://r.jina.ai/", {
-            method: "POST",
+        const response = await fetch(`https://r.jina.ai/${url}`, {
+            method: "GET",
             headers: {
-                Authorization: `Bearer ${apiKey}`,
+                "Accept": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
                 "X-Engine": "browser",
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "15",
-                "X-Token-Budget": "150000",
-                "X-Return-Format": "markdown"
+                "X-Token-Budget": "150000"
             },
-            body: JSON.stringify({ url }),
             signal: controller.signal,
         });
 
@@ -374,6 +373,24 @@ async function fetchFromJinaPremium(
             hasTitleField: markdown.includes('"title"'),
         }, "📋 JINA PREMIUM RAW RESPONSE DEBUG");
         // ========================================================
+
+        // Detect stub response: when Jina fails to extract content, it returns just the URL
+        // Pattern: ```markdown\n{"url": "..."}\n``` or similar minimal responses
+        const isStubResponse =
+            markdown.length < 500 &&
+            markdown.includes('"url"') &&
+            !markdown.includes('"content"') &&
+            !markdown.includes('"title"');
+
+        if (isStubResponse) {
+            logger.warn(
+                { responseLength: markdown.length },
+                "⚠️ Jina premium returned stub response (no content extracted), falling back to public API"
+            );
+            // Return a special error that signals we should try public API
+            return { error: "STUB_RESPONSE", status: 206 };
+        }
+
         return parseJinaResponse(markdown, url);
     } catch (error) {
         clearTimeout(timeoutId);
@@ -498,9 +515,18 @@ export async function POST(request: NextRequest) {
                 : "⚠️ JINA_API_KEY not set, falling back to PUBLIC mode"
         );
 
-        const result = apiKey
+        let result = apiKey
             ? await fetchFromJinaPremium(url, apiKey)
             : await fetchFromJinaPublic(url);
+
+        // If premium API returned a stub response (no content), fallback to public API
+        if ("error" in result && result.error === "STUB_RESPONSE" && apiKey) {
+            logger.info(
+                { hostname: extractHostname(url) },
+                "🔄 Premium API failed to extract content, retrying with PUBLIC API"
+            );
+            result = await fetchFromJinaPublic(url);
+        }
 
         if ("error" in result) {
             logger.error({ error: result.error }, "Jina fetch failed");
