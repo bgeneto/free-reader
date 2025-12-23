@@ -16,7 +16,8 @@ import { UseQueryResult } from "@tanstack/react-query";
 import useLocalStorage from "@/lib/hooks/use-local-storage";
 import { Response } from "../ai/response";
 import { useIsPremium } from "@/lib/hooks/use-is-premium";
-import { Crown } from "lucide-react";
+import { AudioPlayer } from "../ui/audio-player";
+import { Crown, Volume2 } from "lucide-react";
 
 const DAILY_LIMIT = 20;
 
@@ -330,11 +331,20 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                     <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Executive Summary
                     </h3>
-                    {isLoading && (
-                      <span className="text-xs text-accent animate-pulse">
-                        {completion ? "Streaming..." : "Generating..."}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isLoading && (
+                        <span className="text-xs text-accent animate-pulse">
+                          {completion ? "Streaming..." : "Generating..."}
+                        </span>
+                      )}
+                      {processedCompletion && !isLoading && (
+                        <AudioPlayer
+                          text={processedCompletion}
+                          compact
+                          className="text-muted-foreground hover:text-accent"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="text-sm text-foreground">
@@ -362,6 +372,15 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                     </div>
                   )}
                 </div>
+                {/* Audio Player - Full Controls (shown below summary when available) */}
+                {processedCompletion && !isLoading && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <AudioPlayer
+                      text={processedCompletion}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -447,6 +466,6 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
           )}
         </form>
       </div>
-    </div>
+    </div >
   );
 }
