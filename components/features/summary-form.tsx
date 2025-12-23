@@ -19,7 +19,8 @@ import { useIsPremium } from "@/lib/hooks/use-is-premium";
 import { AudioPlayer } from "../ui/audio-player";
 import { Crown, Volume2 } from "lucide-react";
 
-const DAILY_LIMIT = 20;
+// Daily limit configurable via env var (must be NEXT_PUBLIC_ to be available in browser)
+const DAILY_LIMIT = parseInt(process.env.NEXT_PUBLIC_SUMMARY_DAILY_LIMIT || '20', 10);
 
 // Hook to track daily summary usage
 function useDailyUsage() {
