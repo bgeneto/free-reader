@@ -6,38 +6,15 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-SMRY}
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         NEXT_PUBLIC_LOGODEV_TOKEN: ${NEXT_PUBLIC_LOGODEV_TOKEN}
     container_name: free-reader
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      # Node environment
-      NODE_ENV: production
-      LOG_LEVEL: info
-
-      # AI Model Configuration
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SUMMARIZATION_MODEL: ${SUMMARIZATION_MODEL:-openai/gpt-oss-20b:free}
-
-      # Core API Keys (Required)
-      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-
-      # Diffbot for article extraction (Direct & Wayback sources)
-      DIFFBOT_API_KEY: ${DIFFBOT_API_KEY}
-
-      # Redis - Upstash managed service
-      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
-      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
-
-      # Logo Retrieval - LogoDev
-      NEXT_PUBLIC_LOGODEV_TOKEN: ${NEXT_PUBLIC_LOGODEV_TOKEN}
-
-      # Application URLs
-      NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://localhost:3000}
+    env_file:
+      - .env
 
     # Health check to ensure app is running
     healthcheck:
