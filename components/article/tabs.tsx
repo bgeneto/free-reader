@@ -10,15 +10,15 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Fast",
-  "smry-slow": "Slow",
+  "smry-fast": "Quick",
+  "smry-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina.ai",
 };
 
 const MOBILE_SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Fast",
-  "smry-slow": "Slow",
+  "smry-fast": "Quick",
+  "smry-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina",
 };

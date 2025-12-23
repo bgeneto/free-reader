@@ -1,7 +1,8 @@
 "use client";
 
 import { Crown } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+// CLERK DISABLED - useAuth commented out
+// import { useAuth } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 
 interface PremiumBadgeProps {
@@ -9,20 +10,21 @@ interface PremiumBadgeProps {
   showLabel?: boolean;
 }
 
+// CLERK DISABLED - always returns null (no premium badge without auth)
 export function PremiumBadge({ className, showLabel = true }: PremiumBadgeProps) {
-  const { isLoaded, has } = useAuth();
+  // const { isLoaded, has } = useAuth();
+  // if (!isLoaded) {
+  //   return null;
+  // }
+  // const isPremium = has?.({ plan: "premium" }) ?? false;
+  // if (!isPremium) {
+  //   return null;
+  // }
 
-  if (!isLoaded) {
-    return null;
-  }
+  // CLERK DISABLED - always return null
+  return null;
 
-  // Use Clerk Billing's has() to check for premium plan
-  const isPremium = has?.({ plan: "premium" }) ?? false;
-
-  if (!isPremium) {
-    return null;
-  }
-
+  /* Original premium badge UI - kept for reference
   return (
     <div
       className={cn(
@@ -34,4 +36,6 @@ export function PremiumBadge({ className, showLabel = true }: PremiumBadgeProps)
       {showLabel && <span>Premium</span>}
     </div>
   );
+  */
 }
+

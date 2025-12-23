@@ -1,7 +1,8 @@
 "use client";
 
 import { useHistory, type HistoryItem } from "@/lib/hooks/use-history";
-import { SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
+// CLERK DISABLED - imports commented out
+// import { SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
   ArrowLeft,
   History,
@@ -21,6 +22,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { normalizeUrl } from "@/lib/validation/url";
+
+// CLERK DISABLED - Stub components to replace SignedIn/SignedOut
+const SignedIn = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SignedOut = ({ children }: { children: React.ReactNode }) => null; // Never show signed-out content
+const UserButton = () => null; // Don't show user button
 
 /**
  * Format a date to relative time (e.g., "2 hours ago", "3 days ago")
@@ -389,8 +395,10 @@ function ClearConfirmDialog({
 }
 
 function HistoryContent() {
-  const { has, isLoaded } = useAuth();
-  const isPremium = isLoaded && (has?.({ plan: "premium" }) ?? false);
+  // CLERK DISABLED - useAuth removed, always non-premium
+  // const { has, isLoaded } = useAuth();
+  // const isPremium = isLoaded && (has?.({ plan: "premium" }) ?? false);
+  const isPremium = false;
 
   const {
     history,

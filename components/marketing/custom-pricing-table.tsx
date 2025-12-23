@@ -1,9 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { CheckoutButton } from "@clerk/nextjs/experimental";
+// CLERK DISABLED - imports commented out
+// import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+// import { CheckoutButton } from "@clerk/nextjs/experimental";
 import { Check } from "lucide-react";
+
+// CLERK DISABLED - Stub components
+const SignedIn = ({ children }: { children: React.ReactNode }) => null;
+const SignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SignInButton = ({ children, mode }: { children: React.ReactNode; mode?: string }) => <>{children}</>;
+const CheckoutButton = ({ children }: { children: React.ReactNode; planId?: string; planPeriod?: string }) => <>{children}</>;
+
 
 export function CustomPricingTable() {
   const t = useTranslations("pricing");

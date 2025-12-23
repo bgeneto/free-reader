@@ -6,7 +6,8 @@ import { useArticles } from "@/lib/hooks/use-articles";
 import { addArticleToHistory } from "@/lib/hooks/use-history";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import { AdSpotSidebar, AdSpotMobileBar } from "@/components/marketing/ad-spot";
-import { useAuth, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+// CLERK DISABLED - imports commented out
+// import { useAuth, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { useIsPremium } from "@/lib/hooks/use-is-premium";
 import {
   Bug as BugIcon,
@@ -57,9 +58,13 @@ const ModeToggle = dynamic(
   { ssr: false, loading: () => <div className="size-9" /> }
 );
 
+// CLERK DISABLED - HistoryButton now uses static values (always shows as signed-out state)
 // History button that links to /history for signed-in users, /pricing for signed-out
 function HistoryButton({ variant = "desktop" }: { variant?: "desktop" | "mobile" }) {
-  const { isSignedIn, isLoaded } = useAuth();
+  // CLERK DISABLED - useAuth removed, always treat as signed-out
+  // const { isSignedIn, isLoaded } = useAuth();
+  const isSignedIn = false;
+  const isLoaded = true;
 
   const isDesktop = variant === "desktop";
   const href = isSignedIn ? "/history" : "/pricing";
@@ -309,7 +314,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
               </div>
               */}
 
-              {/* Overflow Menu for less common actions */}
+              {/* Overflow Menu for less common actions - DISABLED
               <Menu>
                 <MenuTrigger
                   render={(props) => {
@@ -368,6 +373,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                   />
                 </MenuPopup>
               </Menu>
+              */}
             </div>
 
             {/* Mobile Actions */}

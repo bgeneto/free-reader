@@ -8,7 +8,8 @@ import { CornerDownLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+// CLERK DISABLED - imports commented out
+// import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 import { Banner } from "@/components/marketing/banner";
 import { SiteFooter } from "@/components/layout/site-footer";

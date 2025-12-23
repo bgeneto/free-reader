@@ -1,4 +1,5 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+// CLERK DISABLED - clerkMiddleware commented out
+// import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { buildProxyRedirectUrl } from "@/lib/proxy-redirect";
@@ -7,7 +8,9 @@ import { routing } from './i18n/routing';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-export const proxy = clerkMiddleware(async (_auth, request: NextRequest) => {
+// CLERK DISABLED - replaced clerkMiddleware with standard middleware
+// export const proxy = clerkMiddleware(async (_auth, request: NextRequest) => {
+export const proxy = async (request: NextRequest) => {
   const { pathname, search, origin } = request.nextUrl;
 
   // Skip i18n for API routes - just let them through
@@ -24,7 +27,7 @@ export const proxy = clerkMiddleware(async (_auth, request: NextRequest) => {
 
   // Run i18n middleware for locale handling
   return intlMiddleware(request);
-});
+};
 
 export default proxy;
 
@@ -55,3 +58,4 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
+

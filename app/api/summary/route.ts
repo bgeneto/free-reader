@@ -5,7 +5,8 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
 import { redis } from "@/lib/redis";
-import { auth } from "@clerk/nextjs/server";
+// CLERK DISABLED - auth import commented out
+// import { auth } from "@clerk/nextjs/server";
 
 // Configure AI provider (OpenRouter by default, but customizable)
 // Users can set OPENAI_BASE_URL to any OpenAI-compatible endpoint
@@ -119,9 +120,10 @@ export async function POST(request: NextRequest) {
 
     logger.debug({ clientIp, language, contentLength: content.length }, 'Request details');
 
-    // Check if user is premium - premium users get unlimited summaries
-    const { has } = await auth();
-    const isPremium = has?.({ plan: "premium" }) ?? false;
+    // CLERK DISABLED - Check if user is premium - always false without auth
+    // const { has } = await auth();
+    // const isPremium = has?.({ plan: "premium" }) ?? false;
+    const isPremium = false;
 
     // Rate limiting - skip for premium users
     if (!isPremium) {

@@ -5,7 +5,8 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { QueryProvider } from "@/components/shared/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ClerkProvider } from "@clerk/nextjs";
+// CLERK DISABLED - commented out to remove auth dependency
+// import { ClerkProvider } from "@clerk/nextjs";
 import { getLocale } from 'next-intl/server';
 
 import { siteConfig } from "@/app/config/site";
@@ -48,26 +49,28 @@ export default async function RootLayout({
   const locale = await getLocale();
 
   return (
-    <ClerkProvider>
-      <html lang={locale} className="bg-background dark:bg-background" suppressHydrationWarning>
-        <body
-          className={`${GeistSans.className} bg-background text-foreground`}
+    // CLERK DISABLED - ClerkProvider removed
+    // <ClerkProvider>
+    <html lang={locale} className="bg-background dark:bg-background" suppressHydrationWarning>
+      <body
+        className={`${GeistSans.className} bg-background text-foreground`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <GoogleAnalytics gaId="G-RFC55FX414" />
-            <NuqsAdapter>
-              <QueryProvider>
-                {children}
-              </QueryProvider>
-            </NuqsAdapter>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+          <GoogleAnalytics gaId="G-RFC55FX414" />
+          <NuqsAdapter>
+            <QueryProvider>
+              {children}
+            </QueryProvider>
+          </NuqsAdapter>
+        </ThemeProvider>
+      </body>
+    </html>
+    // </ClerkProvider>
   );
 }
+

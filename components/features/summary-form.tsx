@@ -42,8 +42,8 @@ function useDailyUsage() {
 type ArticleResults = Record<Source, UseQueryResult<ArticleResponse, Error>>;
 
 const SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Fast",
-  "smry-slow": "Slow",
+  "smry-fast": "Quick",
+  "smry-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina.ai",
 };

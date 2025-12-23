@@ -2,12 +2,23 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { CheckoutButton, useSubscription, SubscriptionDetailsButton } from "@clerk/nextjs/experimental";
+// CLERK DISABLED - imports commented out
+// import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+// import { CheckoutButton, useSubscription, SubscriptionDetailsButton } from "@clerk/nextjs/experimental";
 import { Check, X, ChevronDown, ArrowLeft, Crown } from "lucide-react";
 import { useIsPremium } from "@/lib/hooks/use-is-premium";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
+
+// CLERK DISABLED - Stub components
+const SignedIn = ({ children }: { children: React.ReactNode }) => null; // Never show signed-in content
+const SignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>; // Always show signed-out
+const SignInButton = ({ children, mode }: { children: React.ReactNode; mode?: string }) => <>{children}</>;
+const UserButton = () => null;
+const CheckoutButton = ({ children }: { children: React.ReactNode; planId?: string; planPeriod?: string }) => <>{children}</>;
+const SubscriptionDetailsButton = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const useSubscription = () => ({ data: null }); // Stub hook
+
 
 const testimonials = [
   {

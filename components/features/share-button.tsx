@@ -16,6 +16,14 @@ import { Source } from "@/types/api";
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "SMRY";
 
+// Human-readable labels for sources (removes "smry-" prefix)
+const SOURCE_DISPLAY_LABELS: Record<Source, string> = {
+  "smry-fast": "Quick",
+  "smry-slow": "Precise",
+  "wayback": "Wayback",
+  "jina.ai": "Jina.ai",
+};
+
 // Reddit SVG
 const RedditIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -125,7 +133,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
       <div className="rounded-xl bg-zinc-100 dark:bg-zinc-900 p-4 overflow-hidden relative group border border-border">
         <div className="flex justify-between items-start mb-3">
           <span className="bg-background/80 backdrop-blur text-muted-foreground text-[10px] uppercase tracking-wider px-2 py-1 rounded-full font-medium border border-border">
-            {source}
+            {SOURCE_DISPLAY_LABELS[source]}
           </span>
         </div>
 
