@@ -28,11 +28,11 @@
     "shareThoughts": "Share your thoughts",
     "sponsorships": "For sponsorships and inquiries:",
     "q1": "How does paywall bypass work?",
-    "a1": "There are two types of paywalls: hard paywalls and soft paywalls. Hard paywalls don't expose content to the client until you subscribe, so they can't be bypassed with traditional methods. Most sites use soft paywalls, where content is accessible but blocked by popups or only exposed to certain user agents like Googlebot. SMRY tries multiple methods: directly fetching from the original URL (smry-fast), a proxy (smry-slow), fetching from Wayback Machine archives, and a Jina.ai reader. We make all requests in parallel to save you time.",
+    "a1": "There are two types of paywalls: hard paywalls and soft paywalls. Hard paywalls don't expose content to the client until you subscribe, so they can't be bypassed with traditional methods. Most sites use soft paywalls, where content is accessible but blocked by popups or only exposed to certain user agents like Googlebot. {siteName} tries multiple methods: directly fetching from the original URL (Quick), a proxy (Precise), fetching from Wayback Machine archives, and a Jina.ai reader. We make all requests in parallel to save you time.",
     "q2": "How do I know if content can be bypassed?",
-    "a2": "If a site needs to show content to search engines for SEO, it likely uses a soft paywall that can be bypassed. If some content is visible but part is obstructed, it's often a soft paywall. If no content is visible at all, it's likely a hard paywall. Hard paywalls are common for subscription services like Patreon, OnlyFans, or download-only content. If SMRY or other bypass tools don't work, that's a strong sign it's a hard paywall.",
+    "a2": "If a site needs to show content to search engines for SEO, it likely uses a soft paywall that can be bypassed. If some content is visible but part is obstructed, it's often a soft paywall. If no content is visible at all, it's likely a hard paywall. Hard paywalls are common for subscription services like Patreon, OnlyFans, or download-only content. If {siteName} or other bypass tools don't work, that's a strong sign it's a hard paywall.",
     "q3": "What sources do you use?",
-    "a3": "We try multiple sources in parallel: directly fetching from the original URL (smry-fast), a proxy (smry-slow), fetching from Wayback Machine archives, and a Jina.ai reader. We make all requests in parallel to save you time. We also show you which source successfully provided the content, so you can try different options if one fails.",
+    "a3": "We try multiple sources in parallel: directly fetching from the original URL (Quick), a proxy (Precise), fetching from Wayback Machine archives, and a Jina.ai reader. We make all requests in parallel to save you time. We also show you which source successfully provided the content, so you can try different options if one fails.",
     "q4": "Is this open source?",
     "a4": "Yes! This is completely open source. You can view the code, contribute, or run your own instance at",
     "q5": "How fast are summaries generated?",
@@ -45,7 +45,7 @@
     "a8": "You have three options:",
     "a8Option1": "Prepend {code} to the article you're reading (for example: {example}). This instantly opens the cleaned article and the summary builder.",
     "a8Option2": "Paste a URL directly on {siteUrl} and we'll fetch it for you.",
-    "a8Option3": "Drag the bookmarklet on our homepage to your bookmarks bar; tapping it wraps whatever page you're on in SMRY.",
+    "a8Option3": "Drag the bookmarklet on our homepage to your bookmarks bar; tapping it wraps whatever page you're on in {siteName}.",
     "q9": "Does this work with all websites?",
     "a9": "This app works with most websites that use soft paywalls. Hard paywalls (like Patreon, OnlyFans, or sites that require login to download files) cannot be bypassed. We use multiple content sources in parallel to maximize success rates across different types of paywalls."
   },
@@ -63,7 +63,7 @@
     "feedback": "Feedback"
   },
   "pricing": {
-    "backToSmry": "Back to SMRY",
+    "backToSmry": "Back to {siteName}",
     "heroTitle": "Read Any Article, Instantly",
     "heroDescription": "Stop paying $50+/month for multiple subscriptions. Get unlimited access to articles from NYT, WSJ, Bloomberg, and 1000+ sites.",
     "freeTrial": "7-day free trial",
@@ -76,7 +76,7 @@
     "cleanReading": "Clean Reading",
     "cleanReadingDesc": "No ads, no distractions. Just the content you came for.",
     "theMath": "The math",
-    "smryPremium": "SMRY Premium",
+    "smryPremium": "{siteName} Premium",
     "allOfAbove": "All of the above",
     "readWithoutLimits": "Read without limits.",
     "fullAccessFrom": "Full access to 1000+ publications from only",
@@ -116,10 +116,10 @@
     "comparePlans": "Compare plans",
     "feature": "Feature",
     "faqTitle": "Frequently asked questions",
-    "faqHowWorks": "How does SMRY work?",
-    "faqHowWorksAnswer": "Paste any article URL and SMRY retrieves the full content, bypassing most paywalls. You also get an AI-generated summary to quickly understand the key points.",
+    "faqHowWorks": "How does {siteName} work?",
+    "faqHowWorksAnswer": "Paste any article URL and {siteName} retrieves the full content, bypassing most paywalls. You also get an AI-generated summary to quickly understand the key points.",
     "faqPublications": "What publications are supported?",
-    "faqPublicationsAnswer": "SMRY works with 1000+ sites including NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium, and most major news outlets.",
+    "faqPublicationsAnswer": "{siteName} works with 1000+ sites including NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium, and most major news outlets.",
     "faqCancel": "Can I cancel anytime?",
     "faqCancelAnswer": "Yes. Cancel with one click from your account settings. No questions asked, no cancellation fees.",
     "faqTrial": "Is there a free trial?",
@@ -195,14 +195,14 @@
   },
   "common": {
     "premium": "Premium",
-    "smryLogo": "smry logo"
+    "smryLogo": "logo"
   },
   "ads": {
     "advertise": "Advertise",
     "goPro": "Go Pro",
     "wispr": {
       "tagline": "Voice-to-text I use daily",
-      "endorsement": "— michael, creator of smry"
+      "endorsement": "— michael, creator"
     },
     "gptHuman": {
       "tagline": "Bypass AI detectors and write like a human"
@@ -222,8 +222,8 @@
       "december": "December"
     },
     "modal": {
-      "title": "Advertise on SMRY",
-      "badge": "SMRY Sponsors · Last 30 days",
+      "title": "Advertise on {siteName}",
+      "badge": "{siteName} Sponsors · Last 30 days",
       "heroSubtext": "Tech-savvy professionals who bypass paywalls to stay informed",
       "stats": {
         "views": "views",

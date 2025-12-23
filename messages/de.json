@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "Paywalls umgehen & Artikel kostenlos lesen – Ohne Login | Smry",
+    "title": "Paywalls umgehen & Artikel kostenlos lesen - Ohne Login | Smry",
     "description": "Fügen Sie einen beliebigen Paywall-Artikellink ein und erhalten Sie den vollständigen Text plus eine KI-Zusammenfassung. Kostenlos, kein Konto, keine Browser-Erweiterung. Funktioniert auf den meisten Nachrichtenseiten.",
     "ogTitle": "Paywalls umgehen & Artikel kostenlos lesen | Smry",
     "ogDescription": "Fügen Sie einen beliebigen Paywall-Artikellink ein und erhalten Sie den vollständigen Text plus eine KI-Zusammenfassung. Kostenlos, kein Konto, keine Erweiterung.",
@@ -28,26 +28,26 @@
     "shareThoughts": "Teilen Sie Ihre Gedanken",
     "sponsorships": "Für Sponsoring und Anfragen:",
     "q1": "Wie funktioniert der Paywall-Bypass?",
-    "a1": "Es gibt zwei Arten von Paywalls: Hard Paywalls und Soft Paywalls. Hard Paywalls zeigen Inhalte erst nach dem Abonnieren an, daher können sie nicht mit herkömmlichen Methoden umgangen werden. Die meisten Websites verwenden Soft Paywalls, bei denen Inhalte zugänglich sind, aber durch Popups blockiert oder nur bestimmten User Agents wie Googlebot angezeigt werden. SMRY versucht mehrere Methoden: direktes Abrufen von der Original-URL (smry-fast), ein Proxy (smry-slow), Abrufen aus Wayback Machine-Archiven und ein Jina.ai-Reader. Wir machen alle Anfragen parallel, um Ihre Zeit zu sparen.",
+    "a1": "Es gibt zwei Arten von Paywalls: Hard Paywalls und Soft Paywalls. Hard Paywalls zeigen Inhalte erst nach dem Abonnieren an, daher können sie nicht mit herkömmlichen Methoden umgangen werden. Die meisten Websites verwenden Soft Paywalls, bei denen Inhalte zugänglich sind, aber durch Popups blockiert oder nur bestimmten User Agents wie Googlebot angezeigt werden. {siteName} versucht mehrere Methoden: direktes Abrufen von der Original-URL (Quick), ein Proxy (Precise), Abrufen aus Wayback Machine-Archiven und ein Jina.ai-Reader. Wir machen alle Anfragen parallel, um Ihre Zeit zu sparen.",
     "q2": "Wie weiß ich, ob Inhalte umgangen werden können?",
-    "a2": "Wenn eine Website Inhalte für Suchmaschinen für SEO anzeigen muss, verwendet sie wahrscheinlich eine Soft Paywall, die umgangen werden kann. Wenn einige Inhalte sichtbar sind, aber ein Teil verdeckt ist, handelt es sich oft um eine Soft Paywall. Wenn überhaupt keine Inhalte sichtbar sind, handelt es sich wahrscheinlich um eine Hard Paywall. Hard Paywalls sind bei Abonnement-Diensten wie Patreon, OnlyFans oder Download-Only-Inhalten üblich. Wenn SMRY oder andere Bypass-Tools nicht funktionieren, ist das ein starkes Zeichen für eine Hard Paywall.",
-    "q3": "Welche Quellen verwendet SMRY?",
-    "a3": "SMRY versucht mehrere Quellen parallel: direktes Abrufen von der Original-URL (smry-fast), ein Proxy (smry-slow), Abrufen aus Wayback Machine-Archiven und ein Jina.ai-Reader. Wir machen alle Anfragen parallel, um Ihre Zeit zu sparen. Wir zeigen Ihnen auch, welche Quelle den Inhalt erfolgreich geliefert hat, damit Sie verschiedene Optionen ausprobieren können, wenn eine fehlschlägt.",
-    "q4": "Ist SMRY Open Source?",
-    "a4": "Ja! SMRY ist vollständig Open Source. Sie können den Code ansehen, beitragen oder Ihre eigene Instanz ausführen unter",
+    "a2": "Wenn eine Website Inhalte für Suchmaschinen für SEO anzeigen muss, verwendet sie wahrscheinlich eine Soft Paywall, die umgangen werden kann. Wenn einige Inhalte sichtbar sind, aber ein Teil verdeckt ist, handelt es sich oft um eine Soft Paywall. Wenn überhaupt keine Inhalte sichtbar sind, handelt es sich wahrscheinlich um eine Hard Paywall. Hard Paywalls sind bei Abonnement-Diensten wie Patreon, OnlyFans oder Download-Only-Inhalten üblich. Wenn {siteName} oder andere Bypass-Tools nicht funktionieren, ist das ein starkes Zeichen für eine Hard Paywall.",
+    "q3": "Welche Quellen verwendet {siteName}?",
+    "a3": "{siteName} versucht mehrere Quellen parallel: direktes Abrufen von der Original-URL (Quick), ein Proxy (Slow), Abrufen aus Wayback Machine-Archiven und ein Jina.ai-Reader. Wir machen alle Anfragen parallel, um Ihre Zeit zu sparen. Wir zeigen Ihnen auch, welche Quelle den Inhalt erfolgreich geliefert hat, damit Sie verschiedene Optionen ausprobieren können, wenn eine fehlschlägt.",
+    "q4": "Ist {siteName} Open Source?",
+    "a4": "Ja! {siteName} ist vollständig Open Source. Sie können den Code ansehen, beitragen oder Ihre eigene Instanz ausführen unter",
     "q5": "Wie schnell werden Zusammenfassungen erstellt?",
     "a5": "Zusammenfassungen werden in Sekunden mit KI erstellt. Wir cachen Zusammenfassungen, um sofortige Ergebnisse für Artikel zu liefern, die bereits zusammengefasst wurden.",
     "q6": "Welche Sprachen werden für Zusammenfassungen unterstützt?",
     "a6": "Zusammenfassungen sind in 8 Sprachen verfügbar: Englisch, Spanisch, Französisch, Deutsch, Italienisch, Portugiesisch, Russisch und Chinesisch. Wählen Sie Ihre bevorzugte Sprache beim Erstellen einer Zusammenfassung.",
     "q7": "Gibt es ein Limit für die Anzahl der Zusammenfassungen?",
     "a7": "Ja, um faire Nutzung zu gewährleisten, gibt es Ratenbegrenzungen: 20 Zusammenfassungen pro Tag und 6 Zusammenfassungen pro Minute pro IP-Adresse.",
-    "q8": "Wie verwende ich SMRY?",
+    "q8": "Wie verwende ich {siteName}?",
     "a8": "Sie haben drei Möglichkeiten:",
     "a8Option1": "Setzen Sie {code} vor den Artikel, den Sie lesen (zum Beispiel: {example}). Dies öffnet sofort den bereinigten Artikel und den Zusammenfassungs-Builder.",
     "a8Option2": "Fügen Sie eine URL direkt auf {siteUrl} ein und wir holen sie für Sie ab.",
-    "a8Option3": "Ziehen Sie das Bookmarklet von unserer Startseite in Ihre Lesezeichen-Leiste; ein Klick darauf umhüllt jede Seite, auf der Sie sich befinden, mit SMRY.",
+    "a8Option3": "Ziehen Sie das Bookmarklet von unserer Startseite in Ihre Lesezeichen-Leiste; ein Klick darauf umhüllt jede Seite, auf der Sie sich befinden, mit {siteName}.",
     "q9": "Funktioniert das mit allen Websites?",
-    "a9": "SMRY funktioniert mit den meisten Websites, die Soft Paywalls verwenden. Hard Paywalls (wie Patreon, OnlyFans oder Seiten, die einen Login zum Herunterladen von Dateien erfordern) können nicht umgangen werden. Wir verwenden mehrere Inhaltsquellen parallel, um die Erfolgsraten bei verschiedenen Arten von Paywalls zu maximieren."
+    "a9": "{siteName} funktioniert mit den meisten Websites, die Soft Paywalls verwenden. Hard Paywalls (wie Patreon, OnlyFans oder Seiten, die einen Login zum Herunterladen von Dateien erfordern) können nicht umgangen werden. Wir verwenden mehrere Inhaltsquellen parallel, um die Erfolgsraten bei verschiedenen Arten von Paywalls zu maximieren."
   },
   "footer": {
     "builtBy": "Entwickelt von",
@@ -58,12 +58,12 @@
   },
   "foundersLetter": {
     "label": "Eine Nachricht vom Entwickler",
-    "p1": "Ich habe SMRY entwickelt, um ein Problem zu lösen, das ich hatte: Artikel lesen zu wollen, ohne zwischen 5 verschiedenen Tools zu wechseln oder für ein Dutzend Abonnements zu bezahlen.",
-    "p2": "Tausende von Menschen nutzen SMRY jetzt jeden Tag. Wenn es Ihnen Zeit spart, erwägen Sie ein Upgrade auf Premium - Sie erhalten unbegrenzten Zugang und helfen mir, weiterzuentwickeln.",
+    "p1": "Ich habe {siteName} entwickelt, um ein Problem zu lösen, das ich hatte: Artikel lesen zu wollen, ohne zwischen 5 verschiedenen Tools zu wechseln oder für ein Dutzend Abonnements zu bezahlen.",
+    "p2": "Tausende von Menschen nutzen {siteName} jetzt jeden Tag. Wenn es Ihnen Zeit spart, erwägen Sie ein Upgrade auf Premium - Sie erhalten unbegrenzten Zugang und helfen mir, weiterzuentwickeln.",
     "feedback": "Feedback"
   },
   "pricing": {
-    "backToSmry": "Zurück zu SMRY",
+    "backToSmry": "Zurück zu {siteName}",
     "heroTitle": "Jeden Artikel sofort lesen",
     "heroDescription": "Hören Sie auf, 50+ Euro/Monat für mehrere Abonnements zu zahlen. Erhalten Sie unbegrenzten Zugang zu Artikeln von NYT, WSJ, Bloomberg und über 1000 Seiten.",
     "freeTrial": "7 Tage kostenlos testen",
@@ -76,7 +76,7 @@
     "cleanReading": "Sauberes Lesen",
     "cleanReadingDesc": "Keine Werbung, keine Ablenkungen. Nur der Inhalt, für den Sie gekommen sind.",
     "theMath": "Die Rechnung",
-    "smryPremium": "SMRY Premium",
+    "smryPremium": "{siteName} Premium",
     "allOfAbove": "Alles oben genannte",
     "readWithoutLimits": "Lesen ohne Grenzen.",
     "fullAccessFrom": "Voller Zugang zu 1000+ Publikationen ab nur",
@@ -116,10 +116,10 @@
     "comparePlans": "Pläne vergleichen",
     "feature": "Funktion",
     "faqTitle": "Häufig gestellte Fragen",
-    "faqHowWorks": "Wie funktioniert SMRY?",
-    "faqHowWorksAnswer": "Fügen Sie eine beliebige Artikel-URL ein und SMRY ruft den vollständigen Inhalt ab und umgeht die meisten Paywalls. Sie erhalten auch eine KI-generierte Zusammenfassung, um die wichtigsten Punkte schnell zu verstehen.",
+    "faqHowWorks": "Wie funktioniert {siteName}?",
+    "faqHowWorksAnswer": "Fügen Sie eine beliebige Artikel-URL ein und {siteName} ruft den vollständigen Inhalt ab und umgeht die meisten Paywalls. Sie erhalten auch eine KI-generierte Zusammenfassung, um die wichtigsten Punkte schnell zu verstehen.",
     "faqPublications": "Welche Publikationen werden unterstützt?",
-    "faqPublicationsAnswer": "SMRY funktioniert mit über 1000 Websites, darunter NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium und die meisten großen Nachrichtenportale.",
+    "faqPublicationsAnswer": "{siteName} funktioniert mit über 1000 Websites, darunter NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium und die meisten großen Nachrichtenportale.",
     "faqCancel": "Kann ich jederzeit kündigen?",
     "faqCancelAnswer": "Ja. Kündigen Sie mit einem Klick in Ihren Kontoeinstellungen. Keine Fragen, keine Kündigungsgebühren.",
     "faqTrial": "Gibt es eine kostenlose Testversion?",
@@ -195,14 +195,14 @@
   },
   "common": {
     "premium": "Premium",
-    "smryLogo": "smry Logo"
+    "smryLogo": "Logo"
   },
   "ads": {
     "advertise": "Werben",
     "goPro": "Pro werden",
     "wispr": {
       "tagline": "Sprache-zu-Text, das ich täglich nutze",
-      "endorsement": "— michael, Ersteller von smry"
+      "endorsement": "— michael, Ersteller"
     },
     "gptHuman": {
       "tagline": "KI-Detektoren umgehen und wie ein Mensch schreiben"
@@ -222,8 +222,8 @@
       "december": "Dezember"
     },
     "modal": {
-      "title": "Auf SMRY werben",
-      "badge": "SMRY Sponsoren · Letzte 30 Tage",
+      "title": "Auf {siteName} werben",
+      "badge": "{siteName} Sponsoren · Letzte 30 Tage",
       "heroSubtext": "Technikaffine Fachleute, die Paywalls umgehen, um informiert zu bleiben",
       "stats": {
         "views": "Aufrufe",

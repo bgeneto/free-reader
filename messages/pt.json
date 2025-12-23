@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "Bypass de Paywalls e Leia Artigos Completos Grátis – Sem Login | Smry",
+    "title": "Bypass de Paywalls e Leia Artigos Completos Grátis - Sem Login | Smry",
     "description": "Cole qualquer link de artigo com paywall e obtenha o texto completo mais um resumo de IA. Gratuito, sem conta, sem extensão de navegador. Funciona na maioria dos sites de notícias.",
     "ogTitle": "Bypass de Paywalls e Leia Artigos Completos Grátis | Smry",
     "ogDescription": "Cole qualquer link de artigo com paywall e obtenha o texto completo mais um resumo de IA. Gratuito, sem conta, sem extensão.",
@@ -28,26 +28,26 @@
     "shareThoughts": "Compartilhe suas ideias",
     "sponsorships": "Para patrocínios e consultas:",
     "q1": "Como funciona o bypass de paywall?",
-    "a1": "Existem dois tipos de paywalls: hard paywalls e soft paywalls. Hard paywalls não expõem o conteúdo ao cliente até você assinar, então não podem ser contornados com métodos tradicionais. A maioria dos sites usa soft paywalls, onde o conteúdo é acessível mas bloqueado por popups ou exposto apenas a certos user agents como Googlebot. O SMRY tenta vários métodos: busca direta da URL original (smry-fast), um proxy (smry-slow), busca nos arquivos do Wayback Machine e um leitor Jina.ai. Fazemos todas as requisições em paralelo para economizar seu tempo.",
+    "a1": "Existem dois tipos de paywalls: hard paywalls e soft paywalls. Hard paywalls não expõem o conteúdo ao cliente até você assinar, então não podem ser contornados com métodos tradicionais. A maioria dos sites usa soft paywalls, onde o conteúdo é acessível mas bloqueado por popups ou exposto apenas a certos user agents como Googlebot. O {siteName} tenta vários métodos: busca direta da URL original (Quick), um proxy (Precise), busca nos arquivos do Wayback Machine e um leitor Jina.ai. Fazemos todas as requisições em paralelo para economizar seu tempo.",
     "q2": "Como sei se o conteúdo pode ser contornado?",
-    "a2": "Se um site precisa mostrar conteúdo para mecanismos de busca para SEO, provavelmente usa um soft paywall que pode ser contornado. Se algum conteúdo é visível mas parte está obstruída, geralmente é um soft paywall. Se nenhum conteúdo é visível, provavelmente é um hard paywall. Hard paywalls são comuns em serviços de assinatura como Patreon, OnlyFans ou conteúdo apenas para download. Se o SMRY ou outras ferramentas de bypass não funcionam, isso é um forte sinal de que é um hard paywall.",
-    "q3": "Quais fontes o SMRY usa?",
-    "a3": "O SMRY tenta várias fontes em paralelo: busca direta da URL original (smry-fast), um proxy (smry-slow), busca nos arquivos do Wayback Machine e um leitor Jina.ai. Fazemos todas as requisições em paralelo para economizar seu tempo. Também mostramos qual fonte forneceu o conteúdo com sucesso, para que você possa tentar diferentes opções se uma falhar.",
-    "q4": "O SMRY é open source?",
-    "a4": "Sim! O SMRY é completamente open source. Você pode ver o código, contribuir ou executar sua própria instância em",
+    "a2": "Se um site precisa mostrar conteúdo para mecanismos de busca para SEO, provavelmente usa um soft paywall que pode ser contornado. Se algum conteúdo é visível mas parte está obstruída, geralmente é um soft paywall. Se nenhum conteúdo é visível, provavelmente é um hard paywall. Hard paywalls são comuns em serviços de assinatura como Patreon, OnlyFans ou conteúdo apenas para download. Se o {siteName} ou outras ferramentas de bypass não funcionam, isso é um forte sinal de que é um hard paywall.",
+    "q3": "Quais fontes o {siteName} usa?",
+    "a3": "O {siteName} tenta várias fontes em paralelo: busca direta da URL original (Quick), um proxy (Precise), busca nos arquivos do Wayback Machine e um leitor Jina.ai. Fazemos todas as requisições em paralelo para economizar seu tempo. Também mostramos qual fonte forneceu o conteúdo com sucesso, para que você possa tentar diferentes opções se uma falhar.",
+    "q4": "O {siteName} é open source?",
+    "a4": "Sim! O {siteName} é completamente open source. Você pode ver o código, contribuir ou executar sua própria instância em",
     "q5": "Quão rápido os resumos são gerados?",
     "a5": "Os resumos são gerados em segundos usando IA. Armazenamos resumos em cache para fornecer resultados instantâneos para artigos que já foram resumidos anteriormente.",
     "q6": "Quais idiomas são suportados para resumos?",
     "a6": "Os resumos estão disponíveis em 8 idiomas: Inglês, Espanhol, Francês, Alemão, Italiano, Português, Russo e Chinês. Selecione seu idioma preferido ao gerar um resumo.",
     "q7": "Há um limite para quantos resumos posso gerar?",
     "a7": "Sim, para garantir uso justo, há limites de taxa: 20 resumos por dia e 6 resumos por minuto por endereço IP.",
-    "q8": "Como uso o SMRY?",
+    "q8": "Como uso o {siteName}?",
     "a8": "Você tem três opções:",
     "a8Option1": "Adicione {code} antes do artigo que está lendo (por exemplo: {example}). Isso abre instantaneamente o artigo limpo e o construtor de resumos.",
     "a8Option2": "Cole uma URL diretamente no {siteUrl} e buscaremos para você.",
-    "a8Option3": "Arraste o bookmarklet da nossa página inicial para sua barra de favoritos; clicar nele envolve qualquer página que você está no SMRY.",
+    "a8Option3": "Arraste o bookmarklet da nossa página inicial para sua barra de favoritos; clicar nele envolve qualquer página que você está no {siteName}.",
     "q9": "Isso funciona com todos os sites?",
-    "a9": "O SMRY funciona com a maioria dos sites que usam soft paywalls. Hard paywalls (como Patreon, OnlyFans ou sites que exigem login para baixar arquivos) não podem ser contornados. Usamos várias fontes de conteúdo em paralelo para maximizar as taxas de sucesso em diferentes tipos de paywalls."
+    "a9": "O {siteName} funciona com a maioria dos sites que usam soft paywalls. Hard paywalls (como Patreon, OnlyFans ou sites que exigem login para baixar arquivos) não podem ser contornados. Usamos várias fontes de conteúdo em paralelo para maximizar as taxas de sucesso em diferentes tipos de paywalls."
   },
   "footer": {
     "builtBy": "Desenvolvido por",
@@ -58,12 +58,12 @@
   },
   "foundersLetter": {
     "label": "Uma nota do desenvolvedor",
-    "p1": "Eu criei o SMRY para resolver um problema que eu tinha: querer ler artigos sem ficar alternando entre 5 ferramentas diferentes ou pagando por uma dúzia de assinaturas.",
-    "p2": "Milhares de pessoas agora usam o SMRY todos os dias. Se ele economiza seu tempo, considere ir para o premium—você terá acesso ilimitado e me ajudará a continuar construindo.",
+    "p1": "Eu criei o {siteName} para resolver um problema que eu tinha: querer ler artigos sem ficar alternando entre 5 ferramentas diferentes ou pagando por uma dúzia de assinaturas.",
+    "p2": "Milhares de pessoas agora usam o {siteName} todos os dias. Se ele economiza seu tempo, considere ir para o premium—você terá acesso ilimitado e me ajudará a continuar construindo.",
     "feedback": "Feedback"
   },
   "pricing": {
-    "backToSmry": "Voltar ao SMRY",
+    "backToSmry": "Voltar ao {siteName}",
     "heroTitle": "Leia Qualquer Artigo, Instantaneamente",
     "heroDescription": "Pare de pagar $50+/mês por várias assinaturas. Obtenha acesso ilimitado a artigos do NYT, WSJ, Bloomberg e mais de 1000 sites.",
     "freeTrial": "7 dias de teste grátis",
@@ -76,7 +76,7 @@
     "cleanReading": "Leitura Limpa",
     "cleanReadingDesc": "Sem anúncios, sem distrações. Apenas o conteúdo que você veio buscar.",
     "theMath": "A matemática",
-    "smryPremium": "SMRY Premium",
+    "smryPremium": "{siteName} Premium",
     "allOfAbove": "Tudo isso incluso",
     "readWithoutLimits": "Leia sem limites.",
     "fullAccessFrom": "Acesso completo a 1000+ publicações a partir de apenas",
@@ -116,10 +116,10 @@
     "comparePlans": "Comparar planos",
     "feature": "Recurso",
     "faqTitle": "Perguntas Frequentes",
-    "faqHowWorks": "Como funciona o SMRY?",
-    "faqHowWorksAnswer": "Cole qualquer URL de artigo e o SMRY recupera o conteúdo completo, contornando a maioria dos paywalls. Você também recebe um resumo gerado por IA para entender rapidamente os pontos principais.",
+    "faqHowWorks": "Como funciona o {siteName}?",
+    "faqHowWorksAnswer": "Cole qualquer URL de artigo e o {siteName} recupera o conteúdo completo, contornando a maioria dos paywalls. Você também recebe um resumo gerado por IA para entender rapidamente os pontos principais.",
     "faqPublications": "Quais publicações são suportadas?",
-    "faqPublicationsAnswer": "O SMRY funciona com mais de 1000 sites, incluindo NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium e a maioria dos principais portais de notícias.",
+    "faqPublicationsAnswer": "O {siteName} funciona com mais de 1000 sites, incluindo NYT, WSJ, Bloomberg, The Atlantic, Washington Post, Medium e a maioria dos principais portais de notícias.",
     "faqCancel": "Posso cancelar a qualquer momento?",
     "faqCancelAnswer": "Sim. Cancele com um clique nas configurações da sua conta. Sem perguntas, sem taxas de cancelamento.",
     "faqTrial": "Existe um teste gratuito?",
@@ -195,14 +195,14 @@
   },
   "common": {
     "premium": "Premium",
-    "smryLogo": "logo smry"
+    "smryLogo": "logo"
   },
   "ads": {
     "advertise": "Anunciar",
     "goPro": "Seja Pro",
     "wispr": {
       "tagline": "Voz para texto que uso diariamente",
-      "endorsement": "— michael, criador do smry"
+      "endorsement": "— michael, criador"
     },
     "gptHuman": {
       "tagline": "Burle detectores de IA e escreva como humano"
@@ -222,8 +222,8 @@
       "december": "Dezembro"
     },
     "modal": {
-      "title": "Anuncie no SMRY",
-      "badge": "Patrocinadores SMRY · Últimos 30 dias",
+      "title": "Anuncie no {siteName}",
+      "badge": "Patrocinadores {siteName} · Últimos 30 dias",
       "heroSubtext": "Profissionais de tecnologia que burlam paywalls para se manterem informados",
       "stats": {
         "views": "visualizações",
