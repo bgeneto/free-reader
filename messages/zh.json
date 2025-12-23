@@ -17,13 +17,17 @@
     "toAnyUrl": "来使用。",
     "bookmarkletTip": "为了快速访问，请收藏这个",
     "bookmarkletInstructions": "将其拖到书签栏，然后在任何页面上点击它即可在{siteName}中打开。",
-    "validationError": "请输入有效的URL。"
+    "validationError": "请输入有效的URL。",
+    "masthead": "创立于2024年 · 自由新闻访问",
+    "quickAccess": "快速访问"
   },
   "banner": {
-    "heading": "跳过这些付费墙："
+    "heading": "跳过这些付费墙：",
+    "featuredPublications": "精选出版物"
   },
   "faq": {
     "title": "常见问题",
+    "readersGuide": "读者指南",
     "feedbackPrompt": "有反馈或问题？",
     "shareThoughts": "分享您的想法",
     "sponsorships": "赞助和咨询请联系：",
@@ -54,7 +58,10 @@
     "hostedOn": "托管于",
     "sourceCode": "源代码可在以下位置获取",
     "reportBug": "报告错误 / 反馈",
-    "logosBy": "Logo由Logo.dev提供"
+    "logosBy": "Logo由Logo.dev提供",
+    "colophon": "版权页",
+    "tagline": "数字时代的新闻自由",
+    "madeBy": "{siteName} 由 <italic>{author}</italic> 用 💖 制作，基于 SMRY.ai"
   },
   "foundersLetter": {
     "label": "开发者的一封信",

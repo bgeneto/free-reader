@@ -17,13 +17,17 @@
     "toAnyUrl": "voor elke URL te zetten.",
     "bookmarkletTip": "Voor snelle toegang, sla deze",
     "bookmarkletInstructions": "Sleep het naar je bladwijzerbalk, klik er dan op elke pagina op om deze in {siteName} te openen.",
-    "validationError": "Voer een geldige URL in."
+    "validationError": "Voer een geldige URL in.",
+    "masthead": "Est. 2025 · Vrije Pers Toegang",
+    "quickAccess": "Snelle Toegang"
   },
   "banner": {
-    "heading": "Spring over deze betaalmuren:"
+    "heading": "Spring over deze betaalmuren:",
+    "featuredPublications": "Uitgelichte Publicaties"
   },
   "faq": {
     "title": "Veelgestelde Vragen",
+    "readersGuide": "Lezersgids",
     "feedbackPrompt": "Heb je feedback of vragen?",
     "shareThoughts": "Deel je gedachten",
     "sponsorships": "Voor sponsoring en vragen:",
@@ -54,7 +58,10 @@
     "hostedOn": "Gehost op",
     "sourceCode": "De broncode is beschikbaar op",
     "reportBug": "Bug Melden / Feedback",
-    "logosBy": "Logo's geleverd door Logo.dev"
+    "logosBy": "Logo's geleverd door Logo.dev",
+    "colophon": "Colofon",
+    "tagline": "Vrije pers voor het digitale tijdperk",
+    "madeBy": "{siteName} is gemaakt met 💖 door <italic>{author}</italic> gebaseerd op SMRY.ai"
   },
   "foundersLetter": {
     "label": "Een bericht van de ontwikkelaar",

@@ -40,7 +40,7 @@ const EnhancedTabsList: React.FC<{
 
   return (
     <div className="w-full overflow-x-auto pb-2 pt-1 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <TabsPrimitive.List className="flex h-auto w-max min-w-full items-center justify-start gap-1 bg-accent p-0.5 rounded-[14px]">
+      <TabsPrimitive.List className="flex h-auto w-max min-w-full items-center justify-start gap-1 bg-muted p-0.5 rounded-[14px]">
         {sources.map((source, index) => {
           const wordCount = formatWordCount(counts[source]);
           const isLoading = loadingStates[source];
@@ -50,11 +50,11 @@ const EnhancedTabsList: React.FC<{
               key={index}
               value={source}
               className={cn(
-                "group flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-1.5 sm:gap-2 rounded-xl px-1 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors outline-none",
-                // Inactive state
-                "aria-[selected=false]:text-muted-foreground aria-[selected=false]:hover:text-foreground",
+                "group flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-1.5 sm:gap-2 rounded-xl px-1 sm:px-3 py-2 text-xs sm:text-sm font-semibold transition-colors outline-none cursor-pointer",
+                // Inactive state - higher contrast text with semi-bold weight
+                "aria-[selected=false]:text-foreground/90 aria-[selected=false]:hover:text-foreground",
                 // Active state
-                "aria-selected:bg-card aria-selected:text-black dark:aria-selected:text-white aria-selected:shadow-sm",
+                "aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-sm",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               )}
             >

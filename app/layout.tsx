@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
+import { Playfair_Display, Lora, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { GoogleAnalytics } from '@next/third-parties/google'
@@ -10,6 +10,29 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { getLocale } from 'next-intl/server';
 
 import { siteConfig } from "@/app/config/site";
+
+// Editorial Newspaper Typography
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
 
 export const metadata: Metadata = {
   title: `Bypass Paywalls & Read Full Articles Free – No Login | ${siteConfig.name}`,
@@ -51,9 +74,9 @@ export default async function RootLayout({
   return (
     // CLERK DISABLED - ClerkProvider removed
     // <ClerkProvider>
-    <html lang={locale} className="bg-background dark:bg-background" suppressHydrationWarning>
+    <html lang={locale} className={`${playfairDisplay.variable} ${lora.variable} ${sourceSans.variable} bg-background dark:bg-background`} suppressHydrationWarning>
       <body
-        className={`${GeistSans.className} bg-background text-foreground`}
+        className="font-serif bg-background text-foreground antialiased"
       >
         <ThemeProvider
           attribute="class"

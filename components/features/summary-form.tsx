@@ -101,6 +101,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
       url: urlProp,
       ip: ipProp,
       language: preferredLanguage,
+      source: selectedSource, // Include source for cache key differentiation
     },
   });
 
@@ -219,9 +220,9 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
         message: isDaily
           ? "You've hit your daily limit of 20 summaries. Upgrade to Premium for unlimited access."
           : "You've hit your limit of 6 summaries per minute. Wait a moment or upgrade to Premium.",
-        bgClass: "bg-purple-500/10",
-        textClass: "text-purple-600 dark:text-purple-400",
-        titleClass: "text-purple-700 dark:text-purple-300",
+        bgClass: "bg-accent/10",
+        textClass: "text-accent dark:text-accent",
+        titleClass: "text-accent dark:text-accent",
         showUpgrade: true,
       };
     }
@@ -320,7 +321,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
             <div className="rounded-[14px] bg-accent p-0.5 dark:bg-accent">
               <div className="rounded-xl bg-card p-4 dark:bg-card">
                 <div className="mb-4 flex items-center gap-3 border-b border-border pb-4 dark:border-border">
-                  <div className="flex size-6 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-accent/20 text-accent dark:bg-accent/20 dark:text-accent">
                     <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
                     </svg>
@@ -330,7 +331,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                       Executive Summary
                     </h3>
                     {isLoading && (
-                      <span className="text-xs text-purple-500 animate-pulse">
+                      <span className="text-xs text-accent animate-pulse">
                         {completion ? "Streaming..." : "Generating..."}
                       </span>
                     )}
@@ -347,7 +348,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                       </Response>
                       {isLoading && (
                         <div className="mt-2">
-                          <span className="inline-block h-4 w-0.5 animate-pulse bg-purple-500"></span>
+                          <span className="inline-block h-4 w-0.5 animate-pulse bg-accent"></span>
                         </div>
                       )}
                     </>
@@ -381,7 +382,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                     <div className="flex w-full items-center gap-2 truncate text-left">
                       <span>{SOURCE_LABELS[selectedSource]}</span>
                       {longestAvailableSource === selectedSource && (
-                        <span className="text-xs font-normal text-purple-500">Best</span>
+                        <span className="text-xs font-normal text-accent">Best</span>
                       )}
                     </div>
                   </SelectTrigger>
@@ -395,7 +396,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                             <span>{SOURCE_LABELS[source]}</span>
                             {length > 0 && <span className="text-muted-foreground">• {length.toLocaleString()} chars</span>}
                             {status.label && <span className="text-muted-foreground">• {status.label}</span>}
-                            {longestAvailableSource === source && !status.disabled && <span className="text-purple-500">• Best</span>}
+                            {longestAvailableSource === source && !status.disabled && <span className="text-accent">• Best</span>}
                           </span>
                         </SelectItem>
                       );

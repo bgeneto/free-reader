@@ -16,6 +16,11 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ["var(--font-heading)", "Playfair Display", "Georgia", "serif"],
+        serif: ["var(--font-serif)", "Lora", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "Source Sans 3", "system-ui", "sans-serif"],
+      },
       // Colors are defined in globals.css via @theme for Tailwind v4 compatibility
       // Removing the hsl() wrapped definitions that conflict with oklch values
       borderRadius: {

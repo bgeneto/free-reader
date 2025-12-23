@@ -17,13 +17,17 @@
     "toAnyUrl": "antes de cualquier URL.",
     "bookmarkletTip": "Para acceso rápido, guarda este",
     "bookmarkletInstructions": "Arrástralo a tu barra de marcadores, luego haz clic en cualquier página para abrirla en {siteName}.",
-    "validationError": "Por favor, introduce una URL válida."
+    "validationError": "Por favor, introduce una URL válida.",
+    "masthead": "Est. 2025 · Acceso a Prensa Libre",
+    "quickAccess": "Acceso Rápido"
   },
   "banner": {
-    "heading": "Salta estos muros de pago:"
+    "heading": "Salta estos muros de pago:",
+    "featuredPublications": "Publicaciones Destacadas"
   },
   "faq": {
     "title": "Preguntas Frecuentes",
+    "readersGuide": "Guía del Lector",
     "feedbackPrompt": "¿Tienes comentarios o preguntas?",
     "shareThoughts": "Comparte tus ideas",
     "sponsorships": "Para patrocinios y consultas:",
@@ -54,7 +58,10 @@
     "hostedOn": "Alojado en",
     "sourceCode": "El código fuente está disponible en",
     "reportBug": "Reportar Error / Feedback",
-    "logosBy": "Logos proporcionados por Logo.dev"
+    "logosBy": "Logos proporcionados por Logo.dev",
+    "colophon": "Colofón",
+    "tagline": "Prensa libre para la era digital",
+    "madeBy": "{siteName} fue hecho con 💖 por <italic>{author}</italic> basado en SMRY.ai"
   },
   "foundersLetter": {
     "label": "Una nota del desarrollador",

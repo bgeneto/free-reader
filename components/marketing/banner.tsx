@@ -20,7 +20,7 @@ const outlets: OutletType[] = [
   { "name": "Bloomberg", "url": "bloomberg.com", "famousArticle": "https://www.bloomberg.com/graphics/2020-venezuela-sanctions/" },
   { "name": "Globo", "url": "oglobo.globo.com", "famousArticle": "https://oglobo.globo.com/economia/noticia/2025/12/23/em-crise-correios-tem-pior-indice-no-ano-de-entregas-no-prazo-as-vesperas-do-natal.ghtml" },
   { "name": "Financial Times", "url": "ft.com", "famousArticle": "https://www.ft.com/content/97266b9e-9408-11ea-abcd-371e24b679ed" },
-  { "name": "Valor Econômico", "url": "valor.globo.com", "famousArticle": "https://valor.globo.com/brasil/noticia/2025/12/23/previa-da-inflacao-ipca-15-sobe-025percent-em-dezembro-e-fecha-2025-com-alta-de-441percent.ghtml" },
+  { "name": "Valor Econômico", "url": "valor.com.br", "famousArticle": "https://valor.globo.com/brasil/noticia/2025/12/23/previa-da-inflacao-ipca-15-sobe-025percent-em-dezembro-e-fecha-2025-com-alta-de-441percent.ghtml" },
   { "name": "The Washington Post", "url": "washingtonpost.com", "famousArticle": "https://www.washingtonpost.com/graphics/2020/national/police-shootings-2020/" },
   { "name": "CNN", "url": "cnn.com", "famousArticle": "https://www.cnn.com/2020/04/26/health/us-coronavirus-sunday/index.html" },
   { "name": "BBC", "url": "bbc.com", "famousArticle": "https://www.bbc.com/news/world-51235105" },
@@ -57,11 +57,20 @@ export function Banner() {
   const repeatedOutlets = Array(5).fill(outlets).flat(); // Adjust the number as needed
 
   return (
-    <section className="z-20 max-w-xs overflow-hidden py-12 sm:max-w-full">
-      <h2 className="mb-6 text-center text-2xl font-bold text-zinc-700 dark:text-zinc-200">
-        {t("heading")}
-      </h2>
-      <div className="mx-auto flex space-x-4" style={{ maxWidth: '1000px', animation: 'scroll 60s linear infinite' }}>
+    <section className="z-20 max-w-xs overflow-hidden py-16 sm:max-w-full">
+      {/* Editorial Section Header */}
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <div className="h-px w-16 bg-border" />
+          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t("featuredPublications")}</span>
+          <div className="h-px w-16 bg-border" />
+        </div>
+        {/* <h2 className="font-heading text-2xl font-semibold text-foreground italic">
+          {t("heading")}
+        </h2> */}
+      </div>
+
+      <div className="mx-auto flex space-x-6" style={{ maxWidth: '1000px', animation: 'scroll 60s linear infinite' }}>
         {repeatedOutlets.map((outlet, index) => (
           <Outlet key={`${outlet.name}-${index}`} {...outlet} />
         ))}

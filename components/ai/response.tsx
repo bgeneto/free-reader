@@ -408,7 +408,7 @@ export const Response = memo(
           components={components}
           defaultOrigin={defaultOrigin}
           rehypePlugins={[rehypeKatex]}
-          remarkPlugins={[remarkGfm, remarkMath]}
+          remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }]]}
           {...options}
         >
           {parsedChildren}

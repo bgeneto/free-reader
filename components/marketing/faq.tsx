@@ -26,7 +26,7 @@ export function FAQ() {
             href="https://github.com/bgeneto/free-reader"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-600 hover:underline"
+            className="text-accent hover:underline"
           >
             https://github.com/bgeneto/free-reader
           </a>
@@ -68,14 +68,19 @@ export function FAQ() {
   ];
 
   return (
-    <div className="mx-auto mt-12 w-full max-w-3xl">
-      <h2 className="mb-8 text-center text-2xl font-semibold text-foreground">
-        {t("title")}
-      </h2>
+    <div className="mx-auto mt-16 w-full max-w-3xl">
+      {/* Editorial Section Header */}
+      <div className="text-center mb-10">
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <div className="h-px w-12 bg-border" />
+          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t("title")}</span>
+          <div className="h-px w-12 bg-border" />
+        </div>
+      </div>
       <Accordion type="single" collapsible className="w-full">
         {faqData.map((item, index) => (
           <AccordionItem key={index} value={`item-${index}`}>
-            <AccordionTrigger className="text-left font-medium text-foreground">
+            <AccordionTrigger className="text-left font-medium italic text-foreground">
               {item.question}
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground">
@@ -92,7 +97,7 @@ export function FAQ() {
             href="https://smryai.userjot.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-purple-600 hover:underline dark:text-purple-400"
+            className="font-medium text-accent hover:underline dark:text-accent"
           >
             {t("shareThoughts")}
           </a>
@@ -101,7 +106,7 @@ export function FAQ() {
           {t("sponsorships")}{" "}
           <a
             href="mailto:contact@smry.ai"
-            className="font-medium text-purple-600 hover:underline dark:text-purple-400"
+            className="font-medium text-accent hover:underline dark:text-accent"
           >
             contact@smry.ai
           </a>

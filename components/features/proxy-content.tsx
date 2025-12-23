@@ -215,7 +215,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
               <button
                 onClick={() => handleViewModeChange("markdown")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
                   viewMode === "markdown"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -226,7 +226,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
               <button
                 onClick={() => handleViewModeChange("html")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
                   viewMode === "html"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -237,7 +237,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
               <button
                 onClick={() => handleViewModeChange("iframe")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
                   viewMode === "iframe"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -306,7 +306,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                 <SignedOut>
                   <Link
                     href="/pricing"
-                    className="text-xs font-medium bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hover:from-purple-500 hover:to-pink-500 transition-colors whitespace-nowrap"
+                    className="text-xs font-medium text-accent hover:text-accent/80 transition-colors whitespace-nowrap"
                   >
                     Go Pro
                   </Link>
@@ -425,7 +425,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                 <SignedOut>
                   <Link
                     href="/pricing"
-                    className="text-[11px] font-medium bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent whitespace-nowrap"
+                    className="text-[11px] font-medium text-accent whitespace-nowrap"
                   >
                     Go Pro
                   </Link>

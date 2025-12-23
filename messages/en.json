@@ -8,7 +8,7 @@
     "twitterDescription": "Paste any paywalled article link and get the full text plus an AI summary. Free, no account, no extension."
   },
   "home": {
-    "tagline": "Read paywalled articles for free + get an AI summary.",
+    "tagline": "Read articles for free & get an AI summary.",
     "tryIt": "Try it",
     "placeholder": "Paste article URL...",
     "by": "by",
@@ -17,13 +17,17 @@
     "toAnyUrl": "to any URL.",
     "bookmarkletTip": "For quick access, bookmark this",
     "bookmarkletInstructions": "Drag it to your bookmarks bar, then click it on any page to open in {siteName}.",
-    "validationError": "Please enter a valid URL."
+    "validationError": "Please enter a valid URL.",
+    "masthead": "Est. 2025 · Free Press Access",
+    "quickAccess": "Quick Access"
   },
   "banner": {
-    "heading": "Hop over these paywalls:"
+    "heading": "Hop over these paywalls:",
+    "featuredPublications": "Featured Publications"
   },
   "faq": {
     "title": "Frequently Asked Questions",
+    "readersGuide": "Reader's Guide",
     "feedbackPrompt": "Have feedback or questions?",
     "shareThoughts": "Share your thoughts",
     "sponsorships": "For sponsorships and inquiries:",
@@ -54,7 +58,10 @@
     "hostedOn": "Hosted on",
     "sourceCode": "The source code is available on",
     "reportBug": "Report Bug / Feedback",
-    "logosBy": "Logos provided by Logo.dev"
+    "logosBy": "Logos provided by Logo.dev",
+    "colophon": "Colophon",
+    "tagline": "No rights reserved.",
+    "madeBy": "{siteName} was made with 💖 by <italic>{author}</italic> based on SMRY.ai"
   },
   "foundersLetter": {
     "label": "A note from the developer",

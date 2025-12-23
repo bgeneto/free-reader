@@ -8,7 +8,7 @@
     "twitterDescription": "Cole qualquer link de artigo com paywall e obtenha o texto completo mais um resumo de IA. Gratuito, sem conta, sem extensão."
   },
   "home": {
-    "tagline": "Leia artigos com paywall de graça + obtenha um resumo de IA.",
+    "tagline": "Leia artigos de graça & obtenha um resumo de IA.",
     "tryIt": "Experimente",
     "placeholder": "Cole a URL do artigo...",
     "by": "por",
@@ -17,13 +17,17 @@
     "toAnyUrl": "antes de qualquer URL.",
     "bookmarkletTip": "Para acesso rápido, salve este",
     "bookmarkletInstructions": "Arraste para sua barra de favoritos e clique em qualquer página para abrir no {siteName}.",
-    "validationError": "Por favor, insira uma URL válida."
+    "validationError": "Por favor, insira uma URL válida.",
+    "masthead": "Est. 2025 · Acesso Livre à Imprensa",
+    "quickAccess": "Acesso Rápido"
   },
   "banner": {
-    "heading": "Pule estes paywalls:"
+    "heading": "Pule estes paywalls:",
+    "featuredPublications": "Publicações em Destaque"
   },
   "faq": {
     "title": "Perguntas Frequentes",
+    "readersGuide": "Guia do Leitor",
     "feedbackPrompt": "Tem feedback ou dúvidas?",
     "shareThoughts": "Compartilhe suas ideias",
     "sponsorships": "Para patrocínios e consultas:",
@@ -54,7 +58,10 @@
     "hostedOn": "Hospedado em",
     "sourceCode": "O código fonte está disponível no",
     "reportBug": "Reportar Bug / Feedback",
-    "logosBy": "Logos fornecidos por Logo.dev"
+    "logosBy": "Logos fornecidos por Logo.dev",
+    "colophon": "Colofão",
+    "tagline": "Nenhum direito reservado",
+    "madeBy": "{siteName} foi feito com 💖 por <italic>{author}</italic> baseado no SMRY.ai"
   },
   "foundersLetter": {
     "label": "Uma nota do desenvolvedor",

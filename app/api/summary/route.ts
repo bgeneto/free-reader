@@ -32,6 +32,7 @@ const SummaryRequestSchema = z.object({
   url: z.string().optional(),
   ip: z.string().optional(),
   language: z.string().optional().default("en"),
+  source: z.string().optional().default("smry-fast"), // Source tab for cache differentiation
 });
 
 // Base summary prompt template
@@ -115,16 +116,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error }, { status: 400 });
     }
 
-    const { prompt: content, title, url, ip, language } = validationResult.data;
+    const { prompt: content, title, url, ip, language, source } = validationResult.data;
     const clientIp = ip || request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown";
 
     logger.debug({ clientIp, language, contentLength: content.length }, 'Request details');
 
     // Check cache FIRST (before rate limiting)
     // This ensures cache hits don't count against user's rate limit
+    // Cache key includes language AND source for proper differentiation
     const cacheKey = url
-      ? `summary:${language}:${url}`
-      : `summary:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
+      ? `summary:${source}:${language}:${url}`
+      : `summary:${source}:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
 
     // Try to get cached summary, but don't fail if Redis is down
     let cached: string | null = null;

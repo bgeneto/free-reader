@@ -17,13 +17,17 @@
     "toAnyUrl": "vor jede URL setzen.",
     "bookmarkletTip": "Für schnellen Zugriff speichern Sie dieses",
     "bookmarkletInstructions": "Ziehen Sie es in Ihre Lesezeichen-Leiste, dann klicken Sie auf einer beliebigen Seite darauf, um sie in {siteName} zu öffnen.",
-    "validationError": "Bitte geben Sie eine gültige URL ein."
+    "validationError": "Bitte geben Sie eine gültige URL ein.",
+    "masthead": "Est. 2025 · Freier Pressezugang",
+    "quickAccess": "Schnellzugriff"
   },
   "banner": {
-    "heading": "Diese Paywalls überspringen:"
+    "heading": "Diese Paywalls überspringen:",
+    "featuredPublications": "Ausgewählte Publikationen"
   },
   "faq": {
     "title": "Häufig gestellte Fragen",
+    "readersGuide": "Leserhandbuch",
     "feedbackPrompt": "Haben Sie Feedback oder Fragen?",
     "shareThoughts": "Teilen Sie Ihre Gedanken",
     "sponsorships": "Für Sponsoring und Anfragen:",
@@ -54,7 +58,10 @@
     "hostedOn": "Gehostet auf",
     "sourceCode": "Der Quellcode ist verfügbar auf",
     "reportBug": "Bug melden / Feedback",
-    "logosBy": "Logos bereitgestellt von Logo.dev"
+    "logosBy": "Logos bereitgestellt von Logo.dev",
+    "colophon": "Kolophon",
+    "tagline": "Freie Presse für das digitale Zeitalter",
+    "madeBy": "{siteName} wurde mit 💖 von <italic>{author}</italic> erstellt, basierend auf SMRY.ai"
   },
   "foundersLetter": {
     "label": "Eine Nachricht vom Entwickler",

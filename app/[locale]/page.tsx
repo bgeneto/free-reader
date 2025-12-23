@@ -123,33 +123,41 @@ export default function Home() {
       <main className="flex min-h-screen flex-col items-center bg-background p-4 pt-20 text-foreground sm:pt-24 md:p-24 pb-24 lg:pb-4">
         <div className="z-10 mx-auto flex w-full max-w-lg flex-col items-center justify-center sm:mt-16">
 
-          <h1 className="text-center text-4xl font-semibold text-foreground md:text-5xl">
+          {/* Newspaper Masthead */}
+          <div className="text-center mb-8">
             <Image
               src="/logo.png"
               width={100}
               height={100}
               alt={tCommon("smryLogo")}
-              className="-ml-4"
+              className="mx-auto mb-4"
               priority
             />
+            {/* Decorative Rule */}
+            <div className="w-48 h-px bg-border mx-auto mb-4" />
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-medium">
+              {t("masthead")}
+            </p>
+          </div>
+
+          <h1 className="font-heading text-center text-3xl font-semibold text-foreground md:text-4xl italic tracking-tight">
+            {t("tagline")}
           </h1>
 
-          <p className="mt-2 text-center text-lg text-muted-foreground">
-            {t("tagline")}{" "}
+          <p className="mt-3 text-center text-base text-muted-foreground">
             <Link
               href="/proxy?url=https://www.theatlantic.com/technology/archive/2017/11/the-big-unanswered-questions-about-paywalls/547091"
-              className="border-b border-muted-foreground transition-colors hover:text-foreground hover:border-foreground"
+              className="border-b border-accent text-accent transition-colors hover:text-foreground hover:border-foreground"
             >
               {t("tryIt")}
             </Link>
-            .
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 w-full">
             <div className={clsx(
               "flex overflow-hidden rounded-lg border shadow-sm transition-all duration-300",
               "bg-background",
-              "focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-200 focus-within:ring-offset-0",
+              "focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/20 focus-within:ring-offset-0",
               urlError ? "border-red-500 ring-red-200" : "border-input"
             )}>
               <input
@@ -190,7 +198,7 @@ export default function Home() {
                       "size-6 transition-transform duration-300 ease-in-out",
                       {
                         "text-foreground scale-110": isHovered,
-                        "text-purple-500": isUrlValid,
+                        "text-accent": isUrlValid,
                         "text-muted-foreground": !isUrlValid,
                       }
                     )}
@@ -223,7 +231,7 @@ export default function Home() {
             </p>
           )}
 
-          <div className="mx-auto mt-12 max-w-2xl space-y-4 text-center">
+          <div className="mx-auto mt-12 max-w-2xl space-y-6 text-center">
             <p className="text-[15px] leading-relaxed text-muted-foreground">
               {t("prepend", { siteName: siteConfig.name })}{" "}
 
@@ -233,10 +241,26 @@ export default function Home() {
               {t("toAnyUrl")}
             </p>
 
-            <div className="hidden border-t border-border pt-2 sm:block">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {t("bookmarkletTip")} <BookmarkletLink />. {t("bookmarkletInstructions", { siteName: siteConfig.name })}
-              </p>
+            {/* Editorial Section Header for Bookmarklet */}
+            <div className="hidden sm:block pt-6">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="h-px w-12 bg-border" />
+                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t("quickAccess")}</span>
+                <div className="h-px w-12 bg-border" />
+              </div>
+
+              {/* Old-style Card */}
+              <div className="relative border border-border/60 rounded bg-secondary/50 dark:bg-secondary/30 px-6 py-5 shadow-sm">
+                {/* Decorative corner elements */}
+                <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-accent/40" />
+                <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-accent/40" />
+                <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-accent/40" />
+                <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-accent/40" />
+
+                <p className="text-[15px] leading-relaxed text-muted-foreground">
+                  {t("bookmarkletTip")} <BookmarkletLink />. {t("bookmarkletInstructions", { siteName: siteConfig.name })}
+                </p>
+              </div>
             </div>
           </div>
         </div>
