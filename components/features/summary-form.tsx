@@ -331,20 +331,11 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                     <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Executive Summary
                     </h3>
-                    <div className="flex items-center gap-2">
-                      {isLoading && (
-                        <span className="text-xs text-accent animate-pulse">
-                          {completion ? "Streaming..." : "Generating..."}
-                        </span>
-                      )}
-                      {processedCompletion && !isLoading && (
-                        <AudioPlayer
-                          text={processedCompletion}
-                          compact
-                          className="text-muted-foreground hover:text-accent"
-                        />
-                      )}
-                    </div>
+                    {isLoading && (
+                      <span className="text-xs text-accent animate-pulse">
+                        {completion ? "Streaming..." : "Generating..."}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-sm text-foreground">

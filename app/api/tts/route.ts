@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createLogger } from "@/lib/logger";
+import { redis } from "@/lib/redis";
 
 const logger = createLogger('api:tts');
 
 // Default TTS model - supports OpenAI-compatible TTS endpoints
 const DEFAULT_TTS_MODEL = "tts-1";
 const DEFAULT_VOICE = "alloy";
+
+// Cache TTL: 7 days (audio doesn't change for same input)
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 // Request validation
 interface TTSRequest {
@@ -14,9 +18,28 @@ interface TTSRequest {
 }
 
 /**
+ * Create a simple hash from text for cache key
+ * Uses first 100 chars + length + simple checksum for uniqueness
+ */
+function createTextHash(text: string): string {
+    // Simple hash: use text length + first/last chars + checksum
+    const len = text.length;
+    const prefix = text.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '');
+    const suffix = text.substring(Math.max(0, len - 20)).replace(/[^a-zA-Z0-9]/g, '');
+
+    // Simple checksum
+    let sum = 0;
+    for (let i = 0; i < text.length; i += 10) {
+        sum += text.charCodeAt(i);
+    }
+
+    return `${prefix}_${suffix}_${len}_${sum}`;
+}
+
+/**
  * POST /api/tts
  * Generate text-to-speech audio from text
- * Returns streaming audio in mp3 format
+ * Returns audio in mp3 format (with Redis caching)
  */
 export async function POST(request: NextRequest) {
     try {
@@ -34,14 +57,38 @@ export async function POST(request: NextRequest) {
         const maxLength = 4096;
         const truncatedText = text.length > maxLength ? text.substring(0, maxLength) : text;
 
-        logger.info({
-            textLength: truncatedText.length,
-            voice: requestVoice || process.env.TTS_VOICE || DEFAULT_VOICE,
-        }, 'TTS Request');
-
         // Get TTS configuration
         const ttsModel = process.env.TTS_MODEL || DEFAULT_TTS_MODEL;
         const voice = requestVoice || process.env.TTS_VOICE || DEFAULT_VOICE;
+
+        // Create cache key based on text content, voice, and model
+        const textHash = createTextHash(truncatedText);
+        const cacheKey = `tts:${ttsModel}:${voice}:${textHash}`;
+
+        // Check cache first
+        try {
+            const cached = await redis.get<string>(cacheKey);
+            if (cached) {
+                logger.info({ cacheKey }, 'TTS cache hit');
+                // Convert base64 back to binary
+                const audioBuffer = Buffer.from(cached, 'base64');
+                return new Response(audioBuffer, {
+                    headers: {
+                        "Content-Type": "audio/mpeg",
+                        "Content-Length": audioBuffer.length.toString(),
+                        "X-Cache-Hit": "true",
+                    },
+                });
+            }
+        } catch (cacheError) {
+            logger.warn({ error: cacheError }, 'Redis cache check failed, proceeding with TTS generation');
+        }
+
+        logger.info({
+            textLength: truncatedText.length,
+            voice,
+            model: ttsModel,
+        }, 'TTS Request - cache miss');
 
         // Determine the base URL - use the configured OpenAI-compatible endpoint
         const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
@@ -79,23 +126,26 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Stream the audio response
-        const audioStream = response.body;
-        if (!audioStream) {
-            return NextResponse.json(
-                { error: "No audio stream received" },
-                { status: 500 }
-            );
+        // Get the audio as ArrayBuffer for caching
+        const audioBuffer = await response.arrayBuffer();
+        const audioData = Buffer.from(audioBuffer);
+
+        logger.info({ audioSize: audioData.length }, 'TTS audio generated');
+
+        // Cache the audio as base64 (Redis stores strings efficiently)
+        try {
+            const base64Audio = audioData.toString('base64');
+            await redis.set(cacheKey, base64Audio, { ex: CACHE_TTL_SECONDS });
+            logger.debug({ cacheKey }, 'TTS audio cached');
+        } catch (cacheError) {
+            logger.warn({ error: cacheError }, 'Failed to cache TTS audio');
         }
 
-        logger.info('TTS audio streaming started');
-
-        // Return streaming response with proper audio headers
-        return new Response(audioStream, {
+        // Return the audio response
+        return new Response(audioData, {
             headers: {
                 "Content-Type": "audio/mpeg",
-                "Transfer-Encoding": "chunked",
-                "Cache-Control": "no-cache",
+                "Content-Length": audioData.length.toString(),
             },
         });
     } catch (error) {
