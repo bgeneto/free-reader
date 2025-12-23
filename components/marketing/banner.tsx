@@ -9,44 +9,15 @@ type OutletType = {
   famousArticle: string;
 };
 
-// const outlets: OutletType[] = [
-//   { "name": "The New York Times", "url": "nytimes.com" },
-//   { "name": "The Wall Street Journal", "url": "wsj.com" },
-//   { "name": "Bloomberg", "url": "bloomberg.com" },
-//   { "name": "Reuters", "url": "reuters.com" },
-//   { "name": "Financial Times", "url": "ft.com" },
-//   { "name": "The Washington Post", "url": "washingtonpost.com" },
-//   { "name": "CNN", "url": "cnn.com" },
-//   { "name": "BBC", "url": "bbc.com" },
-//   { "name": "The Guardian", "url": "theguardian.com" },
-//   { "name": "Forbes", "url": "forbes.com" },
-//   { "name": "The Economist", "url": "economist.com" },
-//   { "name": "Business Insider", "url": "businessinsider.com" },
-//   { "name": "Los Angeles Times", "url": "latimes.com" },
-//   { "name": "National Geographic", "url": "nationalgeographic.com" },
-//   { "name": "The Atlantic", "url": "theatlantic.com" },
-//   { "name": "Wired", "url": "wired.com" },
-//   { "name": "Time", "url": "time.com" },
-//   { "name": "Newsweek", "url": "newsweek.com" },
-//   { "name": "Harvard Business Review", "url": "hbr.org" },
-//   { "name": "Vanity Fair", "url": "vanityfair.com" },
-//   { "name": "The New Yorker", "url": "newyorker.com" },
-//   { "name": "MIT Technology Review", "url": "technologyreview.com" },
-//   { "name": "Scientific American", "url": "scientificamerican.com" },
-//   { "name": "Al Jazeera", "url": "aljazeera.com" },
-//   { "name": "Fox News", "url": "foxnews.com" },
-//   { "name": "NBC News", "url": "nbcnews.com" },
-//   { "name": "CBS News", "url": "cbsnews.com" },
-//   { "name": "USA Today", "url": "usatoday.com" },
-//   { "name": "The Huffington Post", "url": "huffpost.com" },
-//   { "name": "The Boston Globe", "url": "bostonglobe.com" }
-// ];
-
 const outlets: OutletType[] = [
+  { "name": "UOL", "url": "uol.com.br", "famousArticle": "https://noticias.uol.com.br/politica/ultimas-noticias/2025/08/03/entrevista-william-browder-lei-magnitsky-alexandre-de-moraes.htm" },
   { "name": "The New York Times", "url": "nytimes.com", "famousArticle": "https://www.nytimes.com/interactive/2020/world/coronavirus-maps.html" },
+  { "name": "Estadão", "url": "estadao.com.br", "famousArticle": "https://www.estadao.com.br/politica/moraes-diz-que-reuniao-com-galipolo-foi-para-discutir-lei-magnitsky/" },
   { "name": "The Wall Street Journal", "url": "wsj.com", "famousArticle": "https://www.wsj.com/articles/facebook-files-11631713039" },
-  { "name": "Bloomberg", "url": "bloomberg.com", "famousArticle": "https://www.bloomberg.com/graphics/2020-venezuela-sanctions/" },
+  { "name": "Folha", "url": "folha.uol.com.br", "famousArticle": "https://www1.folha.uol.com.br/mercado/2025/12/relato-sobre-contato-de-moraes-com-galipolo-no-caso-master-amplia-cobrancas-a-ministro.shtml" },
   { "name": "Reuters", "url": "reuters.com", "famousArticle": "https://www.reuters.com/investigates/section/myanmar-rohingya/" },
+  { "name": "Super Interessante", "url": "super.abril.com.br", "famousArticle": "https://super.abril.com.br/saude/assombrou-minha-existencia-por-decadas-os-relatos-de-quem-sofre-de-paralisia-do-sono/" },
+  { "name": "Bloomberg", "url": "bloomberg.com", "famousArticle": "https://www.bloomberg.com/graphics/2020-venezuela-sanctions/" },
   { "name": "Financial Times", "url": "ft.com", "famousArticle": "https://www.ft.com/content/97266b9e-9408-11ea-abcd-371e24b679ed" },
   { "name": "The Washington Post", "url": "washingtonpost.com", "famousArticle": "https://www.washingtonpost.com/graphics/2020/national/police-shootings-2020/" },
   { "name": "CNN", "url": "cnn.com", "famousArticle": "https://www.cnn.com/2020/04/26/health/us-coronavirus-sunday/index.html" },
@@ -99,20 +70,20 @@ export function Banner() {
 const Outlet = ({ name, url, famousArticle: _famousArticle }: OutletType) => {
   const logoDevToken = process.env.NEXT_PUBLIC_LOGODEV_TOKEN;
   const logoUrl = `https://img.logo.dev/${url}?token=${logoDevToken}&size=64&greyscale=true&format=png`;
-  
+
   return (
     <div className="flex flex-col items-center space-y-2">
       {/* <Link href={`/${famousArticle}`} target='_blank'> */}
-          <div className="flex size-16 items-center justify-center"> {/* Adjust width and height as needed */}
-            <Image
-              alt={name}
-              src={logoUrl}
-              width={64}
-              height={64}
-              className="size-12 rounded-full"
-              unoptimized
-            />
-          </div>
+      <div className="flex size-16 items-center justify-center"> {/* Adjust width and height as needed */}
+        <Image
+          alt={name}
+          src={logoUrl}
+          width={64}
+          height={64}
+          className="size-12 rounded-full"
+          unoptimized
+        />
+      </div>
       {/* </Link> */}
     </div>
   );
