@@ -43,9 +43,8 @@ export async function POST(request: NextRequest) {
         const ttsModel = process.env.TTS_MODEL || DEFAULT_TTS_MODEL;
         const voice = requestVoice || process.env.TTS_VOICE || DEFAULT_VOICE;
 
-        // Determine the base URL - use OpenAI directly for TTS
-        // OpenRouter doesn't support TTS, so we need to use OpenAI's endpoint
-        const baseUrl = process.env.TTS_BASE_URL || "https://api.openai.com/v1";
+        // Determine the base URL - use the configured OpenAI-compatible endpoint
+        const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
         const apiKey = process.env.OPENAI_API_KEY;
 
         if (!apiKey) {

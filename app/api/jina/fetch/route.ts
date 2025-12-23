@@ -6,15 +6,28 @@ import { redis } from "@/lib/redis";
 import { compress, decompress } from "@/lib/redis-compression";
 import { getTextDirection } from "@/lib/rtl";
 import { ArticleResponseSchema, ErrorResponseSchema } from "@/types/api";
-import { marked } from "marked";
+import Showdown from "showdown";
 import { sanitizeHtml, sanitizeText } from "@/lib/sanitize-ads";
 
 const logger = createLogger("api:jina:fetch");
 
-// Configure marked
-marked.setOptions({
-    breaks: true,
-    gfm: true,
+// Configure Showdown converter with extensions for GitHub Flavored Markdown
+const showdownConverter = new Showdown.Converter({
+    tables: true,
+    strikethrough: true,
+    ghCodeBlocks: true,
+    tasklists: true,
+    smoothLivePreview: true,
+    simpleLineBreaks: true,
+    openLinksInNewWindow: true,
+    emoji: true,
+    underline: true,
+    ellipsis: true,
+    simplifiedAutoLink: true,
+    excludeTrailingPunctuationFromURLs: true,
+    literalMidWordUnderscores: true,
+    ghMentions: false,
+    backslashEscapesHTMLTags: true,
 });
 
 // Jina.ai Configuration
@@ -53,14 +66,13 @@ function extractHostname(url: string): string {
 }
 
 /**
- * Convert markdown to HTML
+ * Convert markdown to HTML using Showdown
  */
 function convertMarkdownToHtml(markdown: string): string {
     try {
-        const html = marked.parse(markdown);
-        return typeof html === "string" ? html : "";
+        return showdownConverter.makeHtml(markdown);
     } catch (error) {
-        logger.warn({ error }, "Failed to convert markdown via marked");
+        logger.warn({ error }, "Failed to convert markdown via Showdown");
         // Fallback to simple conversion
         const escaped = markdown
             .replace(/&/g, "&amp;")
@@ -359,20 +371,6 @@ async function fetchFromJinaPremium(
         }
 
         const markdown = await response.text();
-
-        // ==================== DEBUG LOGGING ====================
-        logger.info({
-            contentType: response.headers.get("content-type"),
-            responseLength: markdown.length,
-            first500Chars: markdown.substring(0, 500),
-            last200Chars: markdown.substring(Math.max(0, markdown.length - 200)),
-            startsWithBrace: markdown.trim().startsWith("{"),
-            startsWithData: markdown.trim().startsWith("data:"),
-            hasDataField: markdown.includes('"data"'),
-            hasContentField: markdown.includes('"content"'),
-            hasTitleField: markdown.includes('"title"'),
-        }, "📋 JINA PREMIUM RAW RESPONSE DEBUG");
-        // ========================================================
 
         // Detect stub response: when Jina fails to extract content, it returns just the URL
         // Pattern: ```markdown\n{"url": "..."}\n``` or similar minimal responses
