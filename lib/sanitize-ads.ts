@@ -48,6 +48,7 @@ export const AD_KEYWORDS = [
 // These are removed as literal strings before regex processing
 export const AD_HTML_PATTERNS = [
     '<p><a href="#after-top">SKIP ADVERTISEMENT</a></p>',
+    '<p><span>Continua após publicidade</span></p>',
 ];
 
 /**

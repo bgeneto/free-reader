@@ -360,6 +360,20 @@ async function fetchFromJinaPremium(
         }
 
         const markdown = await response.text();
+
+        // ==================== DEBUG LOGGING ====================
+        logger.info({
+            contentType: response.headers.get("content-type"),
+            responseLength: markdown.length,
+            first500Chars: markdown.substring(0, 500),
+            last200Chars: markdown.substring(Math.max(0, markdown.length - 200)),
+            startsWithBrace: markdown.trim().startsWith("{"),
+            startsWithData: markdown.trim().startsWith("data:"),
+            hasDataField: markdown.includes('"data"'),
+            hasContentField: markdown.includes('"content"'),
+            hasTitleField: markdown.includes('"title"'),
+        }, "📋 JINA PREMIUM RAW RESPONSE DEBUG");
+        // ========================================================
         return parseJinaResponse(markdown, url);
     } catch (error) {
         clearTimeout(timeoutId);
