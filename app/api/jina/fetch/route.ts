@@ -342,9 +342,9 @@ async function fetchFromJinaPremium(
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
-                "X-Engine": "cf-browser-rendering",
+                "X-Engine": "browser",
                 "X-Respond-With": "readerlm-v2",
-                "X-Timeout": "20",
+                "X-Timeout": "15",
                 "X-Token-Budget": "150000",
                 "X-Return-Format": "markdown"
             },
