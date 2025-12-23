@@ -109,7 +109,7 @@ interface ProxyContentProps {
 }
 
 export function ProxyContent({ url, ip }: ProxyContentProps) {
-  const { results } = useArticles(url);
+  const { results, triggerJinaFetch } = useArticles(url);
   const { theme, setTheme } = useTheme();
   const { isPremium, isLoading } = useIsPremium();
 
@@ -583,6 +583,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                 viewMode={viewMode}
                 activeSource={source}
                 onSourceChange={handleSourceChange}
+                onJinaTabClick={triggerJinaFetch}
               />
             </div>
           </div>

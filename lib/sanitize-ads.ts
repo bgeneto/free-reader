@@ -39,6 +39,15 @@ export const AD_KEYWORDS = [
     // Dutch
     'advertentie',
     'gesponsord',
+    // Additional keywords
+    'skip advertisement',
+    'skip ad',
+];
+
+// Exact HTML patterns to remove verbatim (case-insensitive)
+// These are removed as literal strings before regex processing
+export const AD_HTML_PATTERNS = [
+    '<p><a href="#after-top">SKIP ADVERTISEMENT</a></p>',
 ];
 
 /**
@@ -98,11 +107,17 @@ export function sanitizeHtml(html: string): string {
 
     let result = html;
 
-    // First pass: remove nested structures like <div><p>Publicidade</p></div>
+    // First pass: remove exact HTML patterns (case-insensitive)
+    for (const pattern of AD_HTML_PATTERNS) {
+        const regex = new RegExp(escapeRegex(pattern), 'gi');
+        result = result.replace(regex, '');
+    }
+
+    // Second pass: remove nested structures like <div><p>Publicidade</p></div>
     const nestedPattern = buildNestedHtmlPattern();
     result = result.replace(nestedPattern, '');
 
-    // Second pass: remove simple elements like <p>Publicidade</p>
+    // Third pass: remove simple elements like <p>Publicidade</p>
     const simplePattern = buildHtmlPattern();
     result = result.replace(simplePattern, '');
 

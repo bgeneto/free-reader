@@ -89,6 +89,7 @@ interface TabProps {
   viewMode: "markdown" | "html" | "iframe";
   activeSource: Source;
   onSourceChange: (source: Source) => void;
+  onJinaTabClick?: () => void;
 }
 
 const ArrowTabs: React.FC<TabProps> = ({
@@ -97,6 +98,7 @@ const ArrowTabs: React.FC<TabProps> = ({
   viewMode,
   activeSource,
   onSourceChange,
+  onJinaTabClick,
 }) => {
   const results = articleResults;
   const tabsId = React.useId();
@@ -115,12 +117,23 @@ const ArrowTabs: React.FC<TabProps> = ({
     "jina.ai": results["jina.ai"].isLoading,
   };
 
+  // Handle source change - trigger Jina fetch if needed
+  const handleSourceChange = React.useCallback((value: string) => {
+    const source = value as Source;
+    onSourceChange(source);
+
+    // Trigger Jina fetch when user clicks the Jina tab
+    if (source === "jina.ai" && onJinaTabClick) {
+      onJinaTabClick();
+    }
+  }, [onSourceChange, onJinaTabClick]);
+
   return (
     <div className="relative min-h-screen pb-12 md:pb-0 px-4 md:px-0">
       <Tabs
         id={tabsId}
         value={activeSource}
-        onValueChange={(value) => onSourceChange(value as Source)}
+        onValueChange={handleSourceChange}
       >
         {/* Tabs List - Responsive (Scrollable on mobile) */}
         <div
