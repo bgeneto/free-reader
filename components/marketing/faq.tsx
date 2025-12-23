@@ -22,12 +22,12 @@ export function FAQ() {
         <>
           {t("a4")}{" "}
           <a
-            href="https://github.com/mrmps/SMRY"
+            href="https://github.com/bgeneto/free-reader"
             target="_blank"
             rel="noopener noreferrer"
             className="text-purple-600 hover:underline"
           >
-            https://github.com/mrmps/SMRY
+            https://github.com/bgeneto/free-reader
           </a>
           .
         </>

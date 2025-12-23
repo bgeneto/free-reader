@@ -72,7 +72,7 @@ https://your-domain.com/proxy?url=https://example.com/article
 
 ```bash
 # Clone the repository
-git clone https://github.com/mrmps/SMRY.git freereader
+git clone https://github.com/bgeneto/free-reader.git freereader
 cd freereader
 
 # Configure environment
@@ -236,8 +236,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 📬 Support
 
-- **Issues & Feature Requests:** [GitHub Issues](https://github.com/mrmps/SMRY/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/mrmps/SMRY/discussions)
+- **Issues & Feature Requests:** [GitHub Issues](https://github.com/bgeneto/free-reader/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/bgeneto/free-reader/discussions)
 
 ---
 

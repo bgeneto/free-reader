@@ -17,6 +17,6 @@ export const siteConfig: SiteConfig = {
   ogImage: `${process.env.NEXT_PUBLIC_URL || "https://smry.ai"}/og-image.png`,
   links: {
     twitter: "https://twitter.com/michael_chomsky",
-    github: "https://github.com/mrmps/SMRY",
+    github: "https://github.com/bgeneto/free-reader",
   },
 };
