@@ -342,7 +342,6 @@ async function fetchFromJinaPremium(
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
-                "Accept": "text/event-stream",
                 "X-Engine": "cf-browser-rendering",
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "20",
@@ -360,36 +359,8 @@ async function fetchFromJinaPremium(
             return { error: `Jina API error: ${response.status}`, status: response.status };
         }
 
-        const sseText = await response.text();
-
-        // Parse SSE response to extract final content
-        const sseData = parseSSEResponse(sseText);
-
-        if (sseData && sseData.content) {
-            logger.debug({
-                titleLength: sseData.title.length,
-                contentLength: sseData.content.length,
-                contentPreview: sseData.content.substring(0, 100)
-            }, "Parsed SSE response from Jina premium");
-
-            // The content from SSE is the markdown (may have code fences)
-            // Pass it to parseJinaResponse which will handle code fence stripping
-            // But first construct a JSON-like structure for parseJinaResponse
-            const jsonPayload = JSON.stringify({
-                code: 200,
-                data: {
-                    title: sseData.title,
-                    content: sseData.content,
-                    url: sseData.url || url
-                }
-            });
-
-            return parseJinaResponse(jsonPayload, url);
-        }
-
-        // If SSE parsing failed, try parsing as regular response
-        logger.debug("SSE parsing returned no content, falling back to regular parsing");
-        return parseJinaResponse(sseText, url);
+        const markdown = await response.text();
+        return parseJinaResponse(markdown, url);
     } catch (error) {
         clearTimeout(timeoutId);
 

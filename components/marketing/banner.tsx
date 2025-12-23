@@ -14,7 +14,7 @@ const outlets: OutletType[] = [
   { "name": "The New York Times", "url": "nytimes.com", "famousArticle": "https://www.nytimes.com/interactive/2020/world/coronavirus-maps.html" },
   { "name": "Estadão", "url": "estadao.com.br", "famousArticle": "https://www.estadao.com.br/politica/moraes-diz-que-reuniao-com-galipolo-foi-para-discutir-lei-magnitsky/" },
   { "name": "The Wall Street Journal", "url": "wsj.com", "famousArticle": "https://www.wsj.com/articles/facebook-files-11631713039" },
-  { "name": "Folha", "url": "folha.uol.com.br", "famousArticle": "https://www1.folha.uol.com.br/mercado/2025/12/relato-sobre-contato-de-moraes-com-galipolo-no-caso-master-amplia-cobrancas-a-ministro.shtml" },
+  { "name": "Folha", "url": "folha.com.br", "famousArticle": "https://www1.folha.uol.com.br/mercado/2025/12/relato-sobre-contato-de-moraes-com-galipolo-no-caso-master-amplia-cobrancas-a-ministro.shtml" },
   { "name": "Reuters", "url": "reuters.com", "famousArticle": "https://www.reuters.com/investigates/section/myanmar-rohingya/" },
   { "name": "Super Interessante", "url": "super.abril.com.br", "famousArticle": "https://super.abril.com.br/saude/assombrou-minha-existencia-por-decadas-os-relatos-de-quem-sofre-de-paralisia-do-sono/" },
   { "name": "Bloomberg", "url": "bloomberg.com", "famousArticle": "https://www.bloomberg.com/graphics/2020-venezuela-sanctions/" },
