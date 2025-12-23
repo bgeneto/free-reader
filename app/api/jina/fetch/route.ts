@@ -97,8 +97,18 @@ function parseJinaResponse(
                 if (content && typeof content === "string" && content.length > 50) {
                     logger.debug("Parsing JSON Jina response format");
 
-                    // The content is typically markdown, extract it
-                    const mainContent = content.trim();
+                    // The content may be wrapped in markdown code fences like ```markdown ... ```
+                    // Strip them if present
+                    let rawContent = content.trim();
+
+                    // Check for ```markdown at the start and ``` at the end
+                    const codeFenceMatch = rawContent.match(/^```(?:markdown)?\s*\n?([\s\S]*?)\n?```\s*$/);
+                    if (codeFenceMatch) {
+                        rawContent = codeFenceMatch[1].trim();
+                        logger.debug("Stripped markdown code fences from JSON content");
+                    }
+
+                    const mainContent = rawContent;
                     const contentHtml = convertMarkdownToHtml(mainContent);
                     const textDir = getTextDirection(null, mainContent);
 
