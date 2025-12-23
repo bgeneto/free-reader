@@ -89,10 +89,27 @@ function parseJinaResponse(
     if (trimmedResponse.startsWith("{")) {
         try {
             const jsonResponse = JSON.parse(trimmedResponse);
+            logger.debug({
+                hasData: !!jsonResponse.data,
+                dataType: typeof jsonResponse.data,
+                code: jsonResponse.code,
+                status: jsonResponse.status,
+                dataKeys: jsonResponse.data ? Object.keys(jsonResponse.data) : []
+            }, "Parsed JSON response from Jina");
 
             // Validate it has the expected Jina JSON structure
             if (jsonResponse.data && typeof jsonResponse.data === "object") {
                 const { title, content, url: sourceUrl } = jsonResponse.data;
+
+                logger.debug({
+                    hasTitle: !!title,
+                    titlePreview: title?.substring(0, 50),
+                    hasContent: !!content,
+                    contentType: typeof content,
+                    contentLength: content?.length || 0,
+                    contentPreview: typeof content === "string" ? content.substring(0, 100) : "N/A",
+                    sourceUrl
+                }, "Extracted fields from Jina JSON data");
 
                 if (content && typeof content === "string" && content.length > 50) {
                     logger.debug("Parsing JSON Jina response format");
@@ -141,11 +158,13 @@ function parseJinaResponse(
                         lang: null,
                         dir: textDir,
                     };
+                } else {
+                    logger.debug({ contentLength: content?.length || 0 }, "JSON content too short or missing, falling back to markdown parsing");
                 }
             }
-        } catch {
+        } catch (parseError) {
             // Not valid JSON, continue with markdown parsing
-            logger.debug("Response looks like JSON but failed to parse, trying markdown format");
+            logger.debug({ error: parseError instanceof Error ? parseError.message : String(parseError) }, "Response looks like JSON but failed to parse, trying markdown format");
         }
     }
 
@@ -291,7 +310,7 @@ async function fetchFromJinaPremium(
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
-                "Accept": "application/json",
+                "Accept": "text/event-stream",
                 "X-Engine": "cf-browser-rendering",
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "20",
