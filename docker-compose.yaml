@@ -5,10 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-https://smry.ai}
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://localhost:3000}
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         NEXT_PUBLIC_LOGODEV_TOKEN: ${NEXT_PUBLIC_LOGODEV_TOKEN}
-    container_name: smry-app
+    container_name: free-reader
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -16,6 +16,11 @@ services:
       # Node environment
       NODE_ENV: production
       LOG_LEVEL: info
+
+      # AI Model Configuration
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUMMARIZATION_MODEL: ${SUMMARIZATION_MODEL:-openai/gpt-oss-20b:free}
 
       # Core API Keys (Required)
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
@@ -28,16 +33,11 @@ services:
       UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
       UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
 
-      # AI Model Configuration
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SUMMARIZATION_MODEL: ${SUMMARIZATION_MODEL:-openai/gpt-oss-20b:free}
-
       # Logo Retrieval - LogoDev
       NEXT_PUBLIC_LOGODEV_TOKEN: ${NEXT_PUBLIC_LOGODEV_TOKEN}
 
       # Application URLs
-      NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-https://smry.ai}
+      NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://localhost:3000}
 
     # Health check to ensure app is running
     healthcheck:
@@ -65,8 +65,8 @@ services:
         max-file: "3"
 
     networks:
-      - smry-network
+      - proxy
 
 networks:
-  smry-network:
-    driver: bridge
+  proxy:
+    external: true
