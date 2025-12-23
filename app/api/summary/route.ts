@@ -156,13 +156,17 @@ export async function POST(request: NextRequest) {
     // const isPremium = has?.({ plan: "premium" }) ?? false;
     const isPremium = false;
 
-    // Rate limiting - skip for premium users
+    // Rate limiting - skip for premium users or when disabled for development
     // Only runs on cache miss to avoid counting cached responses against limit
-    if (!isPremium) {
+    const disableRateLimit = process.env.DISABLE_RATE_LIMIT === 'true';
+    if (!isPremium && !disableRateLimit) {
       try {
+        // Configurable daily limit (default: 20)
+        const dailyLimit = parseInt(process.env.SUMMARY_DAILY_LIMIT || '20', 10);
+
         const dailyRatelimit = new Ratelimit({
           redis: redis,
-          limiter: Ratelimit.slidingWindow(20, "1 d"),
+          limiter: Ratelimit.slidingWindow(dailyLimit, "1 d"),
         });
 
         const minuteRatelimit = new Ratelimit({
@@ -178,9 +182,9 @@ export async function POST(request: NextRequest) {
         );
 
         if (!dailySuccess) {
-          logger.warn({ clientIp }, 'Daily rate limit exceeded');
+          logger.warn({ clientIp, dailyLimit }, 'Daily rate limit exceeded');
           return NextResponse.json(
-            { error: "Your daily limit of 20 summaries has been reached. Please return tomorrow." },
+            { error: `Your daily limit of ${dailyLimit} summaries has been reached. Please return tomorrow.` },
             { status: 429 }
           );
         }
