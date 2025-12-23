@@ -1,0 +1,428 @@
+"use client";
+
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useCompletion } from "@ai-sdk/react";
+import Link from "next/link";
+import { LANGUAGES, Source, ArticleResponse } from "@/types/api";
+import { Button } from "../ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UseQueryResult } from "@tanstack/react-query";
+import useLocalStorage from "@/lib/hooks/use-local-storage";
+import { Response } from "../ai/response";
+import { useIsPremium } from "@/lib/hooks/use-is-premium";
+import { Crown } from "lucide-react";
+
+const DAILY_LIMIT = 20;
+
+// Hook to track daily summary usage
+function useDailyUsage() {
+  const [usage, setUsage] = useLocalStorage<{ count: number; date: string }>(
+    "summary-daily-usage",
+    { count: 0, date: new Date().toDateString() }
+  );
+
+  // Reset if it's a new day
+  const today = new Date().toDateString();
+  const currentCount = usage.date === today ? usage.count : 0;
+
+  const increment = useCallback(() => {
+    const newCount = usage.date === today ? usage.count + 1 : 1;
+    setUsage({ count: newCount, date: today });
+  }, [usage, today, setUsage]);
+
+  return { count: currentCount, increment, limit: DAILY_LIMIT };
+}
+
+type ArticleResults = Record<Source, UseQueryResult<ArticleResponse, Error>>;
+
+const SOURCE_LABELS: Record<Source, string> = {
+  "smry-fast": "Fast",
+  "smry-slow": "Slow",
+  wayback: "Wayback",
+  "jina.ai": "Jina.ai",
+};
+
+const SUMMARY_SOURCES: Source[] = ["smry-fast", "smry-slow", "wayback", "jina.ai"];
+
+interface SummaryFormProps {
+  urlProp: string;
+  ipProp: string;
+  articleResults: ArticleResults;
+  isOpen?: boolean;
+  usePortal?: boolean;
+}
+
+export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = true, usePortal = true }: SummaryFormProps) {
+  // Minimum character threshold for summary eligibility
+  const MIN_CHARS_FOR_SUMMARY = 400;
+
+  // Track daily usage and premium status
+  const { count: usageCount, increment: incrementUsage, limit: usageLimit } = useDailyUsage();
+  const { isPremium, isLoading: isPremiumLoading } = useIsPremium();
+  const showUsageCounter = !isPremiumLoading && !isPremium;
+  const usagePercent = Math.min((usageCount / usageLimit) * 100, 100);
+  const showSoftUpgrade = showUsageCounter && usageCount >= 10 && usageCount < usageLimit;
+
+  // Find the source with the longest content from already-loaded articles
+  // Only consider sources with at least MIN_CHARS_FOR_SUMMARY characters
+  const longestAvailableSource = useMemo(() => {
+    const sources: { source: Source; length: number }[] = SUMMARY_SOURCES.map((source) => ({
+      source,
+      length: articleResults[source]?.data?.article?.textContent?.length || 0,
+    })).filter((s) => s.length >= MIN_CHARS_FOR_SUMMARY);
+
+    // Sort by length and return the longest
+    sources.sort((a, b) => b.length - a.length);
+    return sources[0]?.source || SUMMARY_SOURCES[0]; // Fallback to first source if none meet threshold
+  }, [articleResults]);
+
+  // Allow manual source selection, but default to longest available
+  const [manualSource, setManualSource] = useState<Source | null>(null);
+  const selectedSource = manualSource || longestAvailableSource;
+
+  // Get the currently selected article data
+  const selectedArticle = articleResults[selectedSource]?.data;
+
+  // Persist language preference
+  const [preferredLanguage, setPreferredLanguage] = useLocalStorage<string>("summary-language", "en");
+
+  // Use AI SDK's useCompletion hook for streaming
+  const { completion, complete, isLoading, error } = useCompletion({
+    api: '/api/summary',
+    streamProtocol: 'text', // Use plain text streaming
+    body: {
+      title: selectedArticle?.article?.title,
+      url: urlProp,
+      ip: ipProp,
+      language: preferredLanguage,
+    },
+  });
+
+  const handleRegenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedArticle?.article?.textContent) return;
+
+    await complete(selectedArticle.article.textContent);
+  };
+
+  const handleLanguageChange = (newLanguage: string | null) => {
+    if (!newLanguage) return;
+    setPreferredLanguage(newLanguage);
+    // Don't auto-regenerate - user must click Regenerate button
+  };
+
+  // Check if ANY article has loaded (not just if they're currently loading)
+  const hasArticleData = Object.values(articleResults).some((result) => result.data?.article?.textContent);
+  const allArticlesLoading = Object.values(articleResults).every((result) => result.isLoading);
+  const shouldDisableSource = allArticlesLoading || !hasArticleData;
+
+  // Get content lengths for display
+  const contentLengths = SUMMARY_SOURCES.reduce<Record<Source, number>>((acc, source) => {
+    acc[source] = articleResults[source].data?.article?.textContent?.length || 0;
+    return acc;
+  }, {
+    "smry-fast": 0,
+    "smry-slow": 0,
+    wayback: 0,
+    "jina.ai": 0,
+  });
+
+  // Track if we've auto-generated
+  const hasAutoGeneratedRef = useRef(false);
+
+  // Track previous completion state for usage counting
+  const prevCompletionRef = useRef<string | null>(null);
+
+  // Auto-generate on mount when valid content is available and sidebar is open
+  useEffect(() => {
+    if (
+      isOpen &&
+      !hasAutoGeneratedRef.current &&
+      !manualSource && // Only auto-generate if user hasn't manually selected a source
+      !completion &&
+      !isLoading &&
+      selectedArticle?.article?.textContent &&
+      contentLengths[selectedSource] >= MIN_CHARS_FOR_SUMMARY
+    ) {
+      hasAutoGeneratedRef.current = true;
+      complete(selectedArticle.article.textContent);
+    }
+  }, [selectedArticle, completion, isLoading, complete, selectedSource, contentLengths, isOpen, manualSource]);
+
+  // Track usage when a summary completes (only for non-premium users)
+  useEffect(() => {
+    if (completion && !isLoading && completion !== prevCompletionRef.current && !isPremium) {
+      incrementUsage();
+      prevCompletionRef.current = completion;
+    }
+  }, [completion, isLoading, isPremium, incrementUsage]);
+
+  // Helper to determine if a source should be disabled and why
+  const getSourceStatus = (source: Source) => {
+    const result = articleResults[source];
+    const length = contentLengths[source];
+
+    if (result.isLoading) {
+      return { disabled: true, label: "Loading..." };
+    }
+    if (result.isError) {
+      return { disabled: true, label: "Failed" };
+    }
+    if (length > 0 && length < MIN_CHARS_FOR_SUMMARY) {
+      return { disabled: true, label: "Too short" };
+    }
+    if (length === 0 && !result.isLoading) {
+      return { disabled: true, label: "No content" };
+    }
+    return { disabled: false, label: null };
+  };
+
+  const errorContent = useMemo(() => {
+    if (!error) return null;
+
+    const msg = error.message.toLowerCase();
+
+    // Rate limit error
+    if (msg.includes("limit") && (msg.includes("summaries") || msg.includes("slow down"))) {
+      const isDaily = msg.includes("daily");
+      return {
+        title: "Rate Limit Reached",
+        message: isDaily
+          ? "You've hit your daily limit of 20 summaries. Upgrade to Premium for unlimited access."
+          : "You've hit your limit of 6 summaries per minute. Wait a moment or upgrade to Premium.",
+        bgClass: "bg-purple-500/10",
+        textClass: "text-purple-600 dark:text-purple-400",
+        titleClass: "text-purple-700 dark:text-purple-300",
+        showUpgrade: true,
+      };
+    }
+
+    // Content too short
+    if (msg.includes("content must be at least")) {
+      return {
+        title: "Content Too Short",
+        message: "This article doesn't have enough content to summarize. Try a different source tab.",
+        bgClass: "bg-amber-500/10",
+        textClass: "text-amber-600 dark:text-amber-400",
+        titleClass: "text-amber-700 dark:text-amber-300",
+        showUpgrade: false,
+      };
+    }
+
+    // Generic error
+    return {
+      title: "Error",
+      message: error.message,
+      bgClass: "bg-red-500/10",
+      textClass: "text-red-600 dark:text-red-400",
+      titleClass: "text-red-700 dark:text-red-300",
+      showUpgrade: false,
+    };
+  }, [error]);
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="space-y-4 p-4">
+
+          {error && errorContent && (
+            <div className={`rounded-[14px] p-0.5 ${errorContent.bgClass}`}>
+              <div className="rounded-xl bg-card p-4 dark:bg-card">
+                <h3 className={`mb-1 text-xs font-medium uppercase tracking-wide ${errorContent.titleClass}`}>
+                  {errorContent.title}
+                </h3>
+                <p className={`text-sm ${errorContent.textClass}`}>
+                  {errorContent.message}
+                </p>
+                {/* PREMIUM FEATURE - Upgrade link commented out
+                {errorContent.showUpgrade && (
+                  <div className="mt-3">
+                    <Link
+                      href="/pricing"
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      Upgrade to Premium
+                    </Link>
+                  </div>
+                )}
+                */}
+              </div>
+            </div>
+          )}
+
+          {/* Usage Counter - only for non-premium users */}
+          {showUsageCounter && (
+            <div className="rounded-[14px] bg-accent/50 p-0.5">
+              <div className="rounded-xl bg-card p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Daily summaries</span>
+                  <span className="text-xs font-medium">{usageCount}/{usageLimit}</span>
+                </div>
+                <div className="h-1.5 bg-accent rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${usagePercent >= 90 ? 'bg-red-500' : usagePercent >= 50 ? 'bg-amber-500' : 'bg-green-500'
+                      }`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PREMIUM FEATURE - Soft upgrade prompt commented out
+          {showSoftUpgrade && (
+            <Link href="/pricing" className="block">
+              <div className="rounded-[14px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-0.5 transition-all hover:from-purple-500/20 hover:to-pink-500/20">
+                <div className="rounded-xl bg-card p-3 flex items-center gap-3">
+                  <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    <Crown className="size-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Go unlimited</p>
+                    <p className="text-xs text-muted-foreground">No daily limits + ad-free reading</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+          */}
+
+          {(completion || isLoading) && (
+            <div className="rounded-[14px] bg-accent p-0.5 dark:bg-accent">
+              <div className="rounded-xl bg-card p-4 dark:bg-card">
+                <div className="mb-4 flex items-center gap-3 border-b border-border pb-4 dark:border-border">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                    <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                    </svg>
+                  </div>
+                  <div className="flex flex-1 items-center justify-between">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Executive Summary
+                    </h3>
+                    {isLoading && (
+                      <span className="text-xs text-purple-500 animate-pulse">
+                        {completion ? "Streaming..." : "Generating..."}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm text-foreground">
+                  {completion ? (
+                    <>
+                      <Response
+                        dir={selectedArticle?.article?.dir || 'ltr'}
+                        lang={selectedArticle?.article?.lang || undefined}
+                      >
+                        {completion}
+                      </Response>
+                      {isLoading && (
+                        <div className="mt-2">
+                          <span className="inline-block h-4 w-0.5 animate-pulse bg-purple-500"></span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-3 pt-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-[95%]" />
+                      <Skeleton className="h-4 w-[90%]" />
+                      <Skeleton className="h-4 w-[85%]" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="z-10 border-t border-border bg-card p-4 dark:border-border dark:bg-card">
+        <form onSubmit={handleRegenerate} className="space-y-2">
+          <div className="rounded-[14px] bg-accent p-0.5">
+            <div className="flex flex-col gap-2 rounded-xl bg-card p-2 md:flex-row md:items-center">
+              <div className="min-w-0 flex-1">
+                <Select
+                  value={selectedSource}
+                  onValueChange={(value) => setManualSource(value as Source)}
+                  disabled={shouldDisableSource || isLoading}
+                >
+                  <SelectTrigger className="h-9 w-full min-w-0 border-0 bg-transparent text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
+                    <div className="flex w-full items-center gap-2 truncate text-left">
+                      <span>{SOURCE_LABELS[selectedSource]}</span>
+                      {longestAvailableSource === selectedSource && (
+                        <span className="text-xs font-normal text-purple-500">Best</span>
+                      )}
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent portal={usePortal}>
+                    {SUMMARY_SOURCES.map((source) => {
+                      const status = getSourceStatus(source);
+                      const length = contentLengths[source];
+                      return (
+                        <SelectItem key={source} value={source} disabled={status.disabled}>
+                          <span className="flex flex-wrap items-center gap-2 whitespace-normal leading-snug">
+                            <span>{SOURCE_LABELS[source]}</span>
+                            {length > 0 && <span className="text-muted-foreground">• {length.toLocaleString()} chars</span>}
+                            {status.label && <span className="text-muted-foreground">• {status.label}</span>}
+                            {longestAvailableSource === source && !status.disabled && <span className="text-purple-500">• Best</span>}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="hidden h-4 w-px bg-border md:block" />
+
+              <div className="w-full shrink-0 md:w-[110px]">
+                <Select
+                  value={preferredLanguage}
+                  onValueChange={handleLanguageChange}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="h-9 w-full min-w-0 border-0 bg-transparent text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
+                    <span className="truncate text-left">
+                      {LANGUAGES.find(l => l.code === preferredLanguage)?.name || "Language"}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent portal={usePortal}>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                type="submit"
+                variant={completion ? "ghost" : "default"}
+                size="sm"
+                disabled={isLoading || shouldDisableSource || !selectedArticle?.article?.textContent}
+                className="h-9 shrink-0 px-4 text-sm font-medium transition-all active:scale-95"
+              >
+                {isLoading ? "Generating..." : completion ? "Update" : "Generate"}
+              </Button>
+            </div>
+          </div>
+
+          {!manualSource && hasArticleData && (
+            <p className="truncate px-2 text-center text-[10px] text-muted-foreground">
+              Auto-selected best source ({contentLengths[selectedSource].toLocaleString()} chars)
+            </p>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
