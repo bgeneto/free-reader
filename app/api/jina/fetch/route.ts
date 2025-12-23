@@ -141,7 +141,10 @@ async function fetchFromJinaPremium(
     const timeoutId = setTimeout(() => controller.abort(), JINA_TIMEOUT_MS);
 
     try {
-        logger.info({ hostname: extractHostname(url) }, "Fetching with Jina premium API");
+        logger.info(
+            { hostname: extractHostname(url), mode: "PREMIUM", hasApiKey: true },
+            "🔑 Fetching with Jina PREMIUM API (cf-browser-rendering + readerlm-v2)"
+        );
 
         const response = await fetch("https://r.jina.ai/", {
             method: "POST",
@@ -188,7 +191,10 @@ async function fetchFromJinaPublic(
     const timeoutId = setTimeout(() => controller.abort(), JINA_TIMEOUT_MS);
 
     try {
-        logger.info({ hostname: extractHostname(url) }, "Fetching with Jina public API (no API key)");
+        logger.info(
+            { hostname: extractHostname(url), mode: "PUBLIC", hasApiKey: false },
+            "⚠️ Fetching with Jina PUBLIC API (no API key configured)"
+        );
 
         const response = await fetch(`https://r.jina.ai/${url}`, {
             signal: controller.signal,
@@ -272,6 +278,20 @@ export async function POST(request: NextRequest) {
 
         // Step 2: Fetch from Jina.ai
         const apiKey = process.env.JINA_API_KEY;
+
+        // Log which mode will be used
+        logger.info(
+            {
+                hostname: extractHostname(url),
+                hasApiKey: !!apiKey,
+                apiKeyLength: apiKey?.length || 0,
+                mode: apiKey ? "PREMIUM" : "PUBLIC"
+            },
+            apiKey
+                ? "🔑 JINA_API_KEY is set, using PREMIUM mode"
+                : "⚠️ JINA_API_KEY not set, falling back to PUBLIC mode"
+        );
+
         const result = apiKey
             ? await fetchFromJinaPremium(url, apiKey)
             : await fetchFromJinaPublic(url);
