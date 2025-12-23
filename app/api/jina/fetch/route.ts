@@ -347,7 +347,6 @@ async function fetchFromJinaPremium(
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "20",
                 "X-Token-Budget": "150000",
-                "X-With-Links-Summary": "true",
                 "X-Return-Format": "markdown"
             },
             body: JSON.stringify({ url }),
