@@ -115,7 +115,7 @@ UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 
 # Site configuration
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_URL=https://your-domain.com
 ```
 
 ### Optional

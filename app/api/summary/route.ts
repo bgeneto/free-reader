@@ -15,8 +15,8 @@ const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
   headers: {
     // Optional headers for app attribution and rankings (mainly for OpenRouter)
-    'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://13ft.com',
-    'X-Title': '13ft - Paywall Bypass & AI Summaries',
+    'HTTP-Referer': process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
+    'X-Title': process.env.NEXT_PUBLIC_SITE_NAME || 'Paywall Bypass & AI Summaries',
   },
 });
 
