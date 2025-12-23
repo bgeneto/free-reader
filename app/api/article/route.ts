@@ -280,6 +280,140 @@ async function fetchArticleWithSmryFast(
 }
 
 /**
+ * Fetch article directly from Wayback Machine (archive.org) without using Diffbot
+ * This bypasses Diffbot's rate limits by fetching and parsing with Readability directly
+ */
+async function fetchArticleWithWayback(
+  waybackUrl: string,
+  originalUrl: string
+): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
+  try {
+    logger.info({ source: "wayback", waybackUrl, originalHostname: new URL(originalUrl).hostname }, 'Fetching article from archive.org directly');
+
+    const response = await fetch(waybackUrl, {
+      headers: {
+        "User-Agent": `${process.env.NEXT_PUBLIC_SITE_NAME || "smry.ai"} bot/1.0 (+${process.env.NEXT_PUBLIC_URL || "https://smry.ai"})`,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      cache: "no-store",
+      redirect: "follow",
+    });
+
+    // Specific logging for archive.org rate limits
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      logger.error({
+        source: "wayback",
+        status: 429,
+        retryAfter,
+        waybackUrl
+      }, 'Archive.org rate limit exceeded (429)');
+      return {
+        error: createNetworkError(
+          `Archive.org rate limit exceeded. The Wayback Machine is temporarily limiting requests. Please try again later or use a different source tab.`,
+          waybackUrl,
+          429
+        ),
+      };
+    }
+
+    if (!response.ok) {
+      logger.error({ source: "wayback", status: response.status, waybackUrl }, 'Archive.org fetch HTTP error');
+      return {
+        error: createNetworkError(
+          `HTTP ${response.status} error when fetching from archive.org`,
+          waybackUrl,
+          response.status
+        ),
+      };
+    }
+
+    const html = await response.text();
+
+    if (!html) {
+      logger.warn({ source: "wayback", htmlLength: 0 }, 'Received empty HTML content from archive.org');
+      return {
+        error: createParseError('Received empty HTML content from archive.org', 'wayback'),
+      };
+    }
+
+    // Store original HTML before Readability parsing
+    const originalHtml = html;
+
+    // Use the original URL as the base for parsing (not the wayback URL)
+    // This helps Readability correctly resolve relative URLs
+    const dom = new JSDOM(html, { url: originalUrl });
+    const reader = new Readability(dom.window.document);
+    const parsed = reader.parse();
+
+    if (!parsed || !parsed.content || !parsed.textContent) {
+      logger.warn({ source: "wayback", waybackUrl }, 'Readability extraction failed for archived page');
+      return {
+        error: createParseError('Failed to extract article content from archived page with Readability', 'wayback'),
+      };
+    }
+
+    // Extract language from HTML
+    const htmlLang = dom.window.document.documentElement.getAttribute('lang') ||
+      dom.window.document.documentElement.getAttribute('xml:lang') ||
+      parsed.lang ||
+      null;
+
+    // Detect text direction based on language or content analysis
+    const textDir = getTextDirection(htmlLang, parsed.textContent);
+
+    // Use original URL's hostname for siteName, not archive.org
+    const articleCandidate: CachedArticle = {
+      title: parsed.title || dom.window.document.title || 'Untitled',
+      content: parsed.content,
+      textContent: parsed.textContent,
+      length: parsed.textContent.length,
+      siteName: (() => {
+        try {
+          return new URL(originalUrl).hostname;
+        } catch {
+          return parsed.siteName || 'archive.org';
+        }
+      })(),
+      byline: parsed.byline,
+      publishedTime: extractDateFromDom(dom.window.document) || null,
+      image: extractImageFromDom(dom.window.document) || null,
+      htmlContent: originalHtml, // Original archived page HTML
+      lang: htmlLang,
+      dir: textDir,
+    };
+
+    const validationResult = CachedArticleSchema.safeParse(articleCandidate);
+
+    if (!validationResult.success) {
+      const validationError = fromError(validationResult.error);
+      logger.error({ source: "wayback", validationError: validationError.toString() }, 'Wayback article validation failed');
+      return {
+        error: createParseError(
+          `Invalid Wayback article: ${validationError.toString()}`,
+          'wayback',
+          validationError
+        ),
+      };
+    }
+
+    const validatedArticle = validationResult.data;
+    logger.info({ source: "wayback", title: validatedArticle.title, length: validatedArticle.length }, 'Wayback article parsed and validated');
+
+    return {
+      article: validatedArticle,
+      cacheURL: waybackUrl,
+    };
+  } catch (error) {
+    logger.error({ source: "wayback", error, waybackUrl }, 'Wayback fetch exception');
+    return {
+      error: createNetworkError('Failed to fetch article from archive.org', waybackUrl, undefined, error),
+    };
+  }
+}
+
+/**
  * Fetch and parse article using Diffbot (for smry-slow and wayback sources)
  */
 async function fetchArticleWithDiffbotWrapper(
@@ -360,14 +494,18 @@ async function fetchArticleWithDiffbotWrapper(
  */
 async function fetchArticle(
   urlWithSource: string,
-  source: string
+  source: string,
+  originalUrl?: string
 ): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
   switch (source) {
     case "smry-fast":
       return fetchArticleWithSmryFast(urlWithSource);
     case "smry-slow":
-    case "wayback":
       return fetchArticleWithDiffbotWrapper(urlWithSource, source);
+    case "wayback":
+      // Use direct fetch from archive.org instead of Diffbot
+      // This bypasses Diffbot rate limits
+      return fetchArticleWithWayback(urlWithSource, originalUrl || urlWithSource);
     default:
       return {
         error: createParseError(`Unsupported source: ${source}`, source),
@@ -483,7 +621,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch fresh data
     logger.info({ source: validatedSource, smryUrl }, 'Fetching fresh data');
-    const result = await fetchArticle(urlWithSource, validatedSource);
+    const result = await fetchArticle(urlWithSource, validatedSource, validatedUrl);
 
     if ("error" in result) {
       const appError = result.error;

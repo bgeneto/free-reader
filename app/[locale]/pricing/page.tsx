@@ -14,7 +14,7 @@ import Image from "next/image";
 const SignedIn = ({ children }: { children: React.ReactNode }) => null; // Never show signed-in content
 const SignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>; // Always show signed-out
 const SignInButton = ({ children, mode }: { children: React.ReactNode; mode?: string }) => <>{children}</>;
-const UserButton = () => null;
+const UserButton = (_props: Record<string, unknown>) => null;
 const CheckoutButton = ({ children }: { children: React.ReactNode; planId?: string; planPeriod?: string }) => <>{children}</>;
 const SubscriptionDetailsButton = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 const useSubscription = () => ({ data: null }); // Stub hook

@@ -26,7 +26,8 @@ import { normalizeUrl } from "@/lib/validation/url";
 // CLERK DISABLED - Stub components to replace SignedIn/SignedOut
 const SignedIn = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 const SignedOut = ({ children }: { children: React.ReactNode }) => null; // Never show signed-out content
-const UserButton = () => null; // Don't show user button
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const UserButton = (_props: Record<string, unknown>) => null; // Don't show user button
 
 /**
  * Format a date to relative time (e.g., "2 hours ago", "3 days ago")
