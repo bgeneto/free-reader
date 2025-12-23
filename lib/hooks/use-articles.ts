@@ -8,13 +8,10 @@ import { fetchJinaArticle } from "@/lib/api/jina";
 const SERVER_SOURCES = ["smry-fast", "smry-slow", "wayback"] as const satisfies readonly Source[];
 
 /**
- * Custom hook to fetch Jina article (client-side)
+ * Custom hook to fetch Jina article via server-side endpoint
  * IMPORTANT: Jina is NOT fetched automatically - only when explicitly triggered
  * 
- * Flow:
- * 1. Check cache via GET /api/jina
- * 2. If cache miss or too short, fetch from Jina.ai client-side
- * 3. Update cache via POST /api/jina
+ * The API key is kept secure on the server (not exposed to browser)
  */
 function useJinaArticle(
   url: string,
@@ -23,56 +20,14 @@ function useJinaArticle(
   const query = useQuery({
     queryKey: ["article", "jina.ai", url],
     queryFn: async () => {
-      // Step 1: Check cache
-      try {
-        const cacheResponse = await fetch(
-          `/api/jina?${new URLSearchParams({ url }).toString()}`
-        );
-
-        if (cacheResponse.ok) {
-          const cachedData = await cacheResponse.json();
-          return cachedData as ArticleResponse;
-        }
-      } catch (error) {
-        // Cache check failed, continue to fetch from Jina
-        console.log("Jina cache check failed, fetching fresh:", error);
-      }
-
-      // Step 2: Fetch from Jina.ai client-side with premium API
-      // Get API key from environment (exposed via NEXT_PUBLIC_ prefix)
-      const apiKey = process.env.NEXT_PUBLIC_JINA_API_KEY;
-      const result = await fetchJinaArticle(url, apiKey);
+      // Fetch from server-side endpoint (keeps API key secure)
+      const result = await fetchJinaArticle(url);
 
       if ("error" in result) {
         throw new Error(result.error.message);
       }
 
-      // Step 3: Update cache
-      const articleResponse: ArticleResponse = {
-        source: "jina.ai",
-        cacheURL: `https://r.jina.ai/${url}`,
-        article: {
-          ...result.article,
-          byline: "",
-          dir: "ltr", // Will be detected properly when cached via API
-          lang: "",
-        },
-        status: "success",
-      };
-
-      // Update cache in background (don't await)
-      fetch("/api/jina", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          article: result.article,
-        }),
-      }).catch((error) => {
-        console.warn("Failed to update Jina cache:", error);
-      });
-
-      return articleResponse;
+      return result.article;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
