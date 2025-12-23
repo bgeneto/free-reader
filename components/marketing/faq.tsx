@@ -11,16 +11,17 @@ import { useTranslations } from "next-intl";
 export function FAQ() {
   const t = useTranslations("faq");
   const siteUrl = process.env.NEXT_PUBLIC_URL || "http://smry.ai";
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "SMRY";
 
   const faqData = [
-    { question: t("q1"), answer: t("a1") },
-    { question: t("q2"), answer: t("a2") },
-    { question: t("q3"), answer: t("a3") },
+    { question: t("q1"), answer: t("a1", { siteName }) },
+    { question: t("q2"), answer: t("a2", { siteName }) },
+    { question: t("q3", { siteName }), answer: t("a3", { siteName }) },
     {
-      question: t("q4"),
+      question: t("q4", { siteName }),
       answer: (
         <>
-          {t("a4")}{" "}
+          {t("a4", { siteName })}{" "}
           <a
             href="https://github.com/bgeneto/free-reader"
             target="_blank"
@@ -37,7 +38,7 @@ export function FAQ() {
     { question: t("q6"), answer: t("a6") },
     { question: t("q7"), answer: t("a7") },
     {
-      question: t("q8"),
+      question: t("q8", { siteName }),
       answer: (
         <>
           {t("a8")}
@@ -57,13 +58,13 @@ export function FAQ() {
                 )
               )}
             </li>
-            <li>{t("a8Option2")}</li>
-            <li>{t("a8Option3")}</li>
+            <li>{t("a8Option2", { siteUrl })}</li>
+            <li>{t("a8Option3", { siteName })}</li>
           </ol>
         </>
       ),
     },
-    { question: t("q9"), answer: t("a9") },
+    { question: t("q9", { siteName }), answer: t("a9", { siteName }) },
   ];
 
   return (
