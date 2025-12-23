@@ -74,16 +74,73 @@ function convertMarkdownToHtml(markdown: string): string {
 }
 
 /**
- * Parse Jina.ai markdown response
- * Handles both formats:
+ * Parse Jina.ai response
+ * Handles multiple formats:
+ * - JSON: {"code":200,"status":20000,"data":{"title":"...","content":"...",...},"meta":{...}}
  * - Premium (readerlm-v2): Simple markdown starting with "# Title"
  * - Public: Structured format with "Title:", "URL Source:", "Published Time:", "Markdown Content:"
  */
 function parseJinaResponse(
-    markdown: string,
+    responseText: string,
     url: string
 ): CachedArticle | { error: string } {
-    const lines = markdown.split("\n");
+    // First, try to detect and parse JSON response format
+    const trimmedResponse = responseText.trim();
+    if (trimmedResponse.startsWith("{")) {
+        try {
+            const jsonResponse = JSON.parse(trimmedResponse);
+
+            // Validate it has the expected Jina JSON structure
+            if (jsonResponse.data && typeof jsonResponse.data === "object") {
+                const { title, content, url: sourceUrl } = jsonResponse.data;
+
+                if (content && typeof content === "string" && content.length > 50) {
+                    logger.debug("Parsing JSON Jina response format");
+
+                    // The content is typically markdown, extract it
+                    const mainContent = content.trim();
+                    const contentHtml = convertMarkdownToHtml(mainContent);
+                    const textDir = getTextDirection(null, mainContent);
+
+                    // Try to extract published time from the content if present
+                    let publishedTime: string | null = null;
+                    const dateMatch = mainContent.match(
+                        /\*\*([A-Za-z]+\s+\d{1,2},?\s+\d{4}[^*]*)\*\*/
+                    );
+                    if (dateMatch) {
+                        publishedTime = dateMatch[1].trim();
+                    }
+
+                    // Try to extract byline from the content
+                    let byline: string | null = null;
+                    const bylineMatch = mainContent.match(/^##\s+By\s+(.+)$/m) ||
+                        mainContent.match(/^###\s+By\s+(.+)$/m);
+                    if (bylineMatch) {
+                        byline = bylineMatch[1].trim();
+                    }
+
+                    return {
+                        title: (title || "Untitled").trim(),
+                        content: sanitizeHtml(contentHtml),
+                        textContent: sanitizeText(mainContent),
+                        length: mainContent.length,
+                        siteName: extractHostname(sourceUrl || url),
+                        byline: byline,
+                        publishedTime: publishedTime,
+                        htmlContent: contentHtml,
+                        lang: null,
+                        dir: textDir,
+                    };
+                }
+            }
+        } catch {
+            // Not valid JSON, continue with markdown parsing
+            logger.debug("Response looks like JSON but failed to parse, trying markdown format");
+        }
+    }
+
+    // Fall back to markdown parsing
+    const lines = trimmedResponse.split("\n");
 
     // Detect format: public API has structured headers
     const hasStructuredFormat = lines.some(
@@ -175,7 +232,7 @@ function parseJinaResponse(
         }
 
         // The entire content is the markdown (it's already formatted)
-        mainContent = markdown.trim();
+        mainContent = trimmedResponse;
 
         // Store byline if found (we'll add it to the return object)
         if (bylineMatch) {
@@ -224,7 +281,7 @@ async function fetchFromJinaPremium(
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
-                "Accept": "text/event-stream",
+                "Accept": "application/json",
                 "X-Engine": "cf-browser-rendering",
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "20",

@@ -172,51 +172,153 @@ async function saveOrReturnLongerArticle(
   }
 }
 
+// Browser User-Agents for rotation (real Chrome on different platforms)
+const BROWSER_USER_AGENTS = [
+  // Chrome on Windows
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  // Chrome on macOS
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  // Chrome on Linux
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+];
+
+// Googlebot User-Agents (many sites whitelist these for SEO indexing)
+const GOOGLEBOT_USER_AGENTS = [
+  // Googlebot Desktop
+  "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  // Googlebot Smartphone
+  "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+];
+
+type FetchStrategy = "browser" | "googlebot";
+
+/**
+ * Build headers for a specific fetch strategy
+ */
+function buildFetchHeaders(url: string, strategy: FetchStrategy): HeadersInit {
+  const urlObj = new URL(url);
+  const origin = urlObj.origin;
+
+  if (strategy === "googlebot") {
+    // Googlebot headers - simpler, but whitelisted by many sites
+    const userAgent = GOOGLEBOT_USER_AGENTS[Math.floor(Math.random() * GOOGLEBOT_USER_AGENTS.length)];
+    return {
+      "User-Agent": userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
+    };
+  }
+
+  // Browser strategy - full Chrome emulation
+  const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
+  return {
+    "User-Agent": userAgent,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "DNT": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Sec-CH-UA": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"Windows"',
+    "Upgrade-Insecure-Requests": "1",
+    "Cache-Control": "max-age=0",
+    "Referer": origin + "/",
+  };
+}
+
+/**
+ * Attempt to fetch with a specific strategy
+ */
+async function tryFetchWithStrategy(
+  url: string,
+  strategy: FetchStrategy
+): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean }> {
+  const headers = buildFetchHeaders(url, strategy);
+
+  const response = await fetch(url, {
+    headers,
+    cache: "no-store",
+    redirect: "follow",
+  });
+
+  // Check if blocked (401 Unauthorized, 403 Forbidden, 429 Rate Limited)
+  if (response.status === 401 || response.status === 403 || response.status === 429) {
+    return { status: response.status, blocked: true };
+  }
+
+  if (!response.ok) {
+    return { status: response.status, blocked: false };
+  }
+
+  const html = await response.text();
+  return { html, strategy };
+}
+
 async function fetchArticleWithSmryFast(
   url: string
 ): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
+  const hostname = new URL(url).hostname;
+
   try {
-    logger.info({ source: "smry-fast", hostname: new URL(url).hostname }, 'Fetching article directly');
+    // Strategy 1: Try with browser headers first
+    logger.info({ source: "smry-fast", hostname, strategy: "browser" }, 'Fetching with browser emulation');
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": `${process.env.NEXT_PUBLIC_SITE_NAME || "smry.ai"} bot/1.0 (+${process.env.NEXT_PUBLIC_URL || "https://smry.ai"})`,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      cache: "no-store",
-      redirect: "follow",
-    });
+    let result = await tryFetchWithStrategy(url, "browser");
 
-    if (!response.ok) {
-      logger.error({ source: "smry-fast", status: response.status }, 'Direct fetch HTTP error');
+    // If blocked (401/403/429), retry with Googlebot strategy
+    if ("blocked" in result && result.blocked) {
+      logger.info(
+        { source: "smry-fast", hostname, blockedStatus: result.status, nextStrategy: "googlebot" },
+        `Browser blocked (${result.status}), retrying with Googlebot`
+      );
+
+      // Small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+
+      result = await tryFetchWithStrategy(url, "googlebot");
+    }
+
+    // Check final result
+    if ("blocked" in result || "status" in result) {
+      const status: number = ("status" in result && typeof result.status === "number") ? result.status : 500;
+      logger.error({ source: "smry-fast", status, hostname }, 'All fetch strategies failed');
       return {
         error: createNetworkError(
-          `HTTP ${response.status} error when fetching article`,
+          `HTTP ${status} error when fetching article`,
           url,
-          response.status
+          status
         ),
       };
     }
 
-    const html = await response.text();
+    // Successfully got HTML
+    const { html, strategy } = result;
 
-    if (!html) {
-      logger.warn({ source: "smry-fast", htmlLength: 0 }, 'Received empty HTML content');
+    if (!html || html.length < 100) {
+      logger.warn({ source: "smry-fast", htmlLength: html?.length || 0 }, 'Received empty HTML content');
       return {
         error: createParseError('Received empty HTML content', 'smry-fast'),
       };
     }
 
-    // Store original HTML before Readability parsing
-    const originalHtml = html;
+    logger.debug(
+      { source: "smry-fast", hostname, strategy, htmlLength: html.length },
+      `Successfully fetched with ${strategy} strategy`
+    );
 
     const dom = new JSDOM(html, { url });
     const reader = new Readability(dom.window.document);
     const parsed = reader.parse();
 
     if (!parsed || !parsed.content || !parsed.textContent) {
-      logger.warn({ source: "smry-fast" }, 'Readability extraction failed');
+      logger.warn({ source: "smry-fast", strategy }, 'Readability extraction failed');
       return {
         error: createParseError('Failed to extract article content with Readability', 'smry-fast'),
       };
@@ -225,7 +327,7 @@ async function fetchArticleWithSmryFast(
     // Extract language from HTML
     const htmlLang = dom.window.document.documentElement.getAttribute('lang') ||
       dom.window.document.documentElement.getAttribute('xml:lang') ||
-      parsed.lang || // Readability may extract this
+      parsed.lang ||
       null;
 
     // Detect text direction based on language or content analysis
@@ -246,7 +348,7 @@ async function fetchArticleWithSmryFast(
       byline: parsed.byline,
       publishedTime: extractDateFromDom(dom.window.document) || null,
       image: extractImageFromDom(dom.window.document) || null,
-      htmlContent: originalHtml, // Original page HTML
+      htmlContent: html,
       lang: htmlLang,
       dir: textDir,
     };
@@ -255,10 +357,10 @@ async function fetchArticleWithSmryFast(
 
     if (!validationResult.success) {
       const validationError = fromError(validationResult.error);
-      logger.error({ source: "smry-fast", validationError: validationError.toString() }, 'Readability article validation failed');
+      logger.error({ source: "smry-fast", validationError: validationError.toString() }, 'Article validation failed');
       return {
         error: createParseError(
-          `Invalid Readability article: ${validationError.toString()}`,
+          `Invalid article: ${validationError.toString()}`,
           'smry-fast',
           validationError
         ),
@@ -266,14 +368,17 @@ async function fetchArticleWithSmryFast(
     }
 
     const validatedArticle = validationResult.data;
-    logger.debug({ source: "smry-fast", title: validatedArticle.title, length: validatedArticle.length }, 'Direct article parsed and validated');
+    logger.info(
+      { source: "smry-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy },
+      'Article fetched and parsed successfully'
+    );
 
     return {
       article: validatedArticle,
       cacheURL: url,
     };
   } catch (error) {
-    logger.error({ source: "smry-fast", error }, 'Direct fetch exception');
+    logger.error({ source: "smry-fast", hostname, error }, 'Fetch exception');
     return {
       error: createNetworkError('Failed to fetch article directly', url, undefined, error),
     };
@@ -291,11 +396,31 @@ async function fetchArticleWithWayback(
   try {
     logger.info({ source: "wayback", waybackUrl, originalHostname: new URL(originalUrl).hostname }, 'Fetching article from archive.org directly');
 
+    // Pick a random User-Agent to avoid fingerprinting
+    const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
+
     const response = await fetch(waybackUrl, {
       headers: {
-        "User-Agent": `${process.env.NEXT_PUBLIC_SITE_NAME || "smry.ai"} bot/1.0 (+${process.env.NEXT_PUBLIC_URL || "https://smry.ai"})`,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        // Core browser headers
+        "User-Agent": userAgent,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+
+        // Security headers that browsers send
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+
+        // Client hints (Chrome-specific)
+        "Sec-CH-UA": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "Sec-CH-UA-Mobile": "?0",
+        "Sec-CH-UA-Platform": '"Windows"',
+
+        // Additional headers
+        "Upgrade-Insecure-Requests": "1",
+        "Cache-Control": "max-age=0",
       },
       cache: "no-store",
       redirect: "follow",
