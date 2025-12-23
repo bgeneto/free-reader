@@ -75,6 +75,9 @@ function convertMarkdownToHtml(markdown: string): string {
 
 /**
  * Parse Jina.ai markdown response
+ * Handles both formats:
+ * - Premium (readerlm-v2): Simple markdown starting with "# Title"
+ * - Public: Structured format with "Title:", "URL Source:", "Published Time:", "Markdown Content:"
  */
 function parseJinaResponse(
     markdown: string,
@@ -82,34 +85,105 @@ function parseJinaResponse(
 ): CachedArticle | { error: string } {
     const lines = markdown.split("\n");
 
-    const title = lines[0]?.replace("Title: ", "").trim() || "Untitled";
+    // Detect format: public API has structured headers
+    const hasStructuredFormat = lines.some(
+        (line, i) =>
+            i < 10 &&
+            (line.startsWith("Title:") ||
+                line.startsWith("URL Source:") ||
+                line.startsWith("Markdown Content:"))
+    );
 
-    let urlSourceLine = "";
-    let publishedTime = null;
-    let contentStartIndex = 4;
+    let title = "Untitled";
+    let urlSource = url;
+    let publishedTime: string | null = null;
+    let mainContent = "";
 
-    for (let i = 0; i < Math.min(10, lines.length); i++) {
-        if (lines[i].startsWith("URL Source:")) {
-            urlSourceLine = lines[i].replace("URL Source: ", "").trim();
-            contentStartIndex = i + 2;
+    if (hasStructuredFormat) {
+        // Parse structured format (public API)
+        logger.debug("Parsing structured Jina response format");
 
-            if (lines[i + 2]?.startsWith("Published Time:")) {
-                publishedTime = lines[i + 2].replace("Published Time: ", "").trim();
-                contentStartIndex = i + 4;
+        let contentStartIndex = 0;
+
+        for (let i = 0; i < Math.min(15, lines.length); i++) {
+            const line = lines[i];
+
+            if (line.startsWith("Title:")) {
+                title = line.replace("Title:", "").trim() || "Untitled";
+            } else if (line.startsWith("URL Source:")) {
+                urlSource = line.replace("URL Source:", "").trim() || url;
+            } else if (line.startsWith("Published Time:")) {
+                publishedTime = line.replace("Published Time:", "").trim() || null;
+            } else if (line.includes("Markdown Content:")) {
+                contentStartIndex = i + 1;
+                break;
             }
+        }
 
-            if (lines[contentStartIndex]?.includes("Markdown Content:")) {
-                contentStartIndex++;
+        // If no "Markdown Content:" found, try to find where content starts
+        if (contentStartIndex === 0) {
+            for (let i = 0; i < Math.min(15, lines.length); i++) {
+                if (
+                    !lines[i].startsWith("Title:") &&
+                    !lines[i].startsWith("URL Source:") &&
+                    !lines[i].startsWith("Published Time:") &&
+                    lines[i].trim().length > 0
+                ) {
+                    contentStartIndex = i;
+                    break;
+                }
             }
+        }
 
-            break;
+        mainContent = lines.slice(contentStartIndex).join("\n").trim();
+    } else {
+        // Parse simple markdown format (premium API with readerlm-v2)
+        logger.debug("Parsing simple markdown Jina response format (premium)");
+
+        // First line with # is typically the title
+        for (let i = 0; i < Math.min(10, lines.length); i++) {
+            const line = lines[i].trim();
+            if (line.startsWith("# ")) {
+                title = line.replace(/^#\s+/, "").trim();
+                break;
+            } else if (line.startsWith("## ") && title === "Untitled") {
+                // Fall back to ## if no # found
+                title = line.replace(/^##\s+/, "").trim();
+            }
+        }
+
+        // Try to extract author/byline from "## By Author" pattern
+        let bylineMatch: string | null = null;
+        for (let i = 0; i < Math.min(15, lines.length); i++) {
+            const line = lines[i].trim();
+            if (line.startsWith("## By ") || line.startsWith("### By ")) {
+                bylineMatch = line.replace(/^###?\s+By\s+/i, "").trim();
+                break;
+            }
+        }
+
+        // Try to extract published time from bold date pattern like "**December 19, 2025...**"
+        for (let i = 0; i < Math.min(20, lines.length); i++) {
+            const line = lines[i].trim();
+            const dateMatch = line.match(
+                /\*\*([A-Za-z]+\s+\d{1,2},?\s+\d{4}[^*]*)\*\*/
+            );
+            if (dateMatch) {
+                publishedTime = dateMatch[1].trim();
+                break;
+            }
+        }
+
+        // The entire content is the markdown (it's already formatted)
+        mainContent = markdown.trim();
+
+        // Store byline if found (we'll add it to the return object)
+        if (bylineMatch) {
+            logger.debug({ byline: bylineMatch }, "Extracted byline from premium response");
         }
     }
 
-    const urlSource = urlSourceLine || url;
-    const mainContent = lines.slice(contentStartIndex).join("\n").trim();
-
-    if (!mainContent || mainContent.length < 100) {
+    if (!mainContent || mainContent.length < 50) {
         return { error: "Jina.ai returned insufficient content" };
     }
 
@@ -150,12 +224,13 @@ async function fetchFromJinaPremium(
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
+                "Accept": "text/event-stream",
                 "X-Engine": "cf-browser-rendering",
                 "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "20",
                 "X-Token-Budget": "150000",
-                "X-With-Links-Summary": "true"
+                "X-With-Links-Summary": "true",
+                "X-Return-Format": "markdown"
             },
             body: JSON.stringify({ url }),
             signal: controller.signal,
