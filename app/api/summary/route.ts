@@ -120,12 +120,42 @@ export async function POST(request: NextRequest) {
 
     logger.debug({ clientIp, language, contentLength: content.length }, 'Request details');
 
+    // Check cache FIRST (before rate limiting)
+    // This ensures cache hits don't count against user's rate limit
+    const cacheKey = url
+      ? `summary:${language}:${url}`
+      : `summary:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
+
+    // Try to get cached summary, but don't fail if Redis is down
+    let cached: string | null = null;
+    try {
+      cached = await redis.get<string>(cacheKey);
+
+      if (cached && typeof cached === "string") {
+        logger.info({ cacheKey }, 'Cache hit - returning cached summary');
+        // Return cached response with [CACHED] prefix so frontend can detect
+        // and avoid incrementing usage counter
+        return new Response(`[CACHED]${cached}`, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Cache-Hit": "true"
+          },
+        });
+      }
+    } catch (redisError) {
+      // If Redis cache retrieval fails, log it but proceed to generate the summary
+      logger.warn({ error: redisError }, 'Redis cache retrieval failed, will generate fresh summary');
+    }
+
+    logger.debug({ cacheKey }, 'Cache miss - will generate new summary');
+
     // CLERK DISABLED - Check if user is premium - always false without auth
     // const { has } = await auth();
     // const isPremium = has?.({ plan: "premium" }) ?? false;
     const isPremium = false;
 
     // Rate limiting - skip for premium users
+    // Only runs on cache miss to avoid counting cached responses against limit
     if (!isPremium) {
       try {
         const dailyRatelimit = new Ratelimit({
@@ -167,31 +197,6 @@ export async function POST(request: NextRequest) {
       }
     } else if (isPremium) {
       logger.debug({ clientIp }, 'Premium user - skipping rate limits');
-    }
-
-    // Check cache (use content hash or URL for cache key)
-    const cacheKey = url
-      ? `summary:${language}:${url}`
-      : `summary:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
-
-    // Try to get cached summary, but don't fail if Redis is down
-    let cached: string | null = null;
-    try {
-      cached = await redis.get<string>(cacheKey);
-
-      if (cached && typeof cached === "string") {
-        logger.debug('Cache hit');
-        // Return cached response as plain text for useCompletion
-        return new Response(cached, {
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Cache-Hit": "true"
-          },
-        });
-      }
-    } catch (redisError) {
-      // If Redis cache retrieval fails, log it but proceed to generate the summary
-      logger.warn({ error: redisError }, 'Redis cache retrieval failed, will generate fresh summary');
     }
 
     // Content length is already validated by schema (minimum 2000 characters)

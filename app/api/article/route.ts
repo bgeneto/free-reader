@@ -10,6 +10,7 @@ import { createLogger } from "@/lib/logger";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { getTextDirection } from "@/lib/rtl";
+import { sanitizeHtml, sanitizeText } from "@/lib/sanitize-ads";
 
 const logger = createLogger('api:article');
 
@@ -232,8 +233,8 @@ async function fetchArticleWithSmryFast(
 
     const articleCandidate: CachedArticle = {
       title: parsed.title || dom.window.document.title || 'Untitled',
-      content: parsed.content,
-      textContent: parsed.textContent,
+      content: sanitizeHtml(parsed.content),
+      textContent: sanitizeText(parsed.textContent),
       length: parsed.textContent.length,
       siteName: (() => {
         try {
@@ -363,11 +364,10 @@ async function fetchArticleWithWayback(
     // Detect text direction based on language or content analysis
     const textDir = getTextDirection(htmlLang, parsed.textContent);
 
-    // Use original URL's hostname for siteName, not archive.org
     const articleCandidate: CachedArticle = {
       title: parsed.title || dom.window.document.title || 'Untitled',
-      content: parsed.content,
-      textContent: parsed.textContent,
+      content: sanitizeHtml(parsed.content),
+      textContent: sanitizeText(parsed.textContent),
       length: parsed.textContent.length,
       siteName: (() => {
         try {
@@ -469,8 +469,8 @@ async function fetchArticleWithDiffbotWrapper(
 
     const article: CachedArticle = {
       title: validatedArticle.title,
-      content: validatedArticle.html,
-      textContent: validatedArticle.text,
+      content: sanitizeHtml(validatedArticle.html),
+      textContent: sanitizeText(validatedArticle.text),
       length: validatedArticle.text.length,
       siteName: validatedArticle.siteName,
       byline: validatedArticle.byline,

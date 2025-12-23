@@ -11,7 +11,7 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
     <footer className={cn(className)}>
       <div className="container flex items-center justify-center py-6">
         <p className="text-center text-sm text-muted-foreground">
-          © {currentYear} {siteName}. All rights reserved.
+          © {currentYear} {siteName} by bgeneto. No rights reserved.
         </p>
       </div>
     </footer>

@@ -1,6 +1,7 @@
 "use client";
 
 import { marked } from "marked";
+import { sanitizeHtml, sanitizeText } from "@/lib/sanitize-ads";
 
 marked.setOptions({
   breaks: true,
@@ -30,9 +31,9 @@ export async function fetchJinaArticle(
 ): Promise<{ article: JinaArticle } | { error: JinaError }> {
   try {
     const jinaUrl = `https://r.jina.ai/${url}`;
-    
+
     const response = await fetch(jinaUrl);
-    
+
     if (!response.ok) {
       return {
         error: {
@@ -56,33 +57,33 @@ export async function fetchJinaArticle(
     // Markdown Content:
     // <content>
     const title = lines[0]?.replace("Title: ", "").trim() || "Untitled";
-    
+
     // Find the URL Source line
     let urlSourceLine = "";
     let publishedTime = null;
     let contentStartIndex = 4; // Default
-    
+
     for (let i = 0; i < Math.min(10, lines.length); i++) {
       if (lines[i].startsWith("URL Source:")) {
         urlSourceLine = lines[i].replace("URL Source: ", "").trim();
         // Content typically starts a few lines after URL Source
         contentStartIndex = i + 2;
-        
+
         // Check if there's a Published Time line
         if (lines[i + 2]?.startsWith("Published Time:")) {
           publishedTime = lines[i + 2].replace("Published Time: ", "").trim();
           contentStartIndex = i + 4;
         }
-        
+
         // Skip "Markdown Content:" header if present
         if (lines[contentStartIndex]?.includes("Markdown Content:")) {
           contentStartIndex++;
         }
-        
+
         break;
       }
     }
-    
+
     const urlSource = urlSourceLine || url;
     const mainContent = lines.slice(contentStartIndex).join("\n").trim();
 
@@ -90,8 +91,8 @@ export async function fetchJinaArticle(
 
     const article: JinaArticle = {
       title: title,
-      content: contentHtml,
-      textContent: mainContent,
+      content: sanitizeHtml(contentHtml),
+      textContent: sanitizeText(mainContent),
       length: mainContent.length,
       siteName: extractHostname(urlSource),
       publishedTime: publishedTime,
