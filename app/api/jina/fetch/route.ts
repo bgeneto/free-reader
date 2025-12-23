@@ -291,6 +291,38 @@ function parseJinaResponse(
 }
 
 /**
+ * Parse SSE (Server-Sent Events) response from Jina premium API
+ * Each event contains progressively accumulated content
+ * Returns the final complete content from the last event
+ */
+function parseSSEResponse(sseText: string): { title: string; content: string; url: string } | null {
+    const lines = sseText.split("\n");
+    let lastData: { title: string; content: string; url: string } | null = null;
+
+    for (const line of lines) {
+        if (line.startsWith("data:")) {
+            const jsonStr = line.substring(5).trim();
+            if (jsonStr) {
+                try {
+                    const data = JSON.parse(jsonStr);
+                    if (data.content !== undefined) {
+                        lastData = {
+                            title: data.title || "",
+                            content: data.content || "",
+                            url: data.url || ""
+                        };
+                    }
+                } catch {
+                    // Skip invalid JSON lines
+                }
+            }
+        }
+    }
+
+    return lastData;
+}
+
+/**
  * Fetch article from Jina.ai using premium API (server-side)
  */
 async function fetchFromJinaPremium(
@@ -329,8 +361,36 @@ async function fetchFromJinaPremium(
             return { error: `Jina API error: ${response.status}`, status: response.status };
         }
 
-        const markdown = await response.text();
-        return parseJinaResponse(markdown, url);
+        const sseText = await response.text();
+
+        // Parse SSE response to extract final content
+        const sseData = parseSSEResponse(sseText);
+
+        if (sseData && sseData.content) {
+            logger.debug({
+                titleLength: sseData.title.length,
+                contentLength: sseData.content.length,
+                contentPreview: sseData.content.substring(0, 100)
+            }, "Parsed SSE response from Jina premium");
+
+            // The content from SSE is the markdown (may have code fences)
+            // Pass it to parseJinaResponse which will handle code fence stripping
+            // But first construct a JSON-like structure for parseJinaResponse
+            const jsonPayload = JSON.stringify({
+                code: 200,
+                data: {
+                    title: sseData.title,
+                    content: sseData.content,
+                    url: sseData.url || url
+                }
+            });
+
+            return parseJinaResponse(jsonPayload, url);
+        }
+
+        // If SSE parsing failed, try parsing as regular response
+        logger.debug("SSE parsing returned no content, falling back to regular parsing");
+        return parseJinaResponse(sseText, url);
     } catch (error) {
         clearTimeout(timeoutId);
 

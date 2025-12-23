@@ -22,6 +22,7 @@ const outlets: OutletType[] = [
   { "name": "Financial Times", "url": "ft.com", "famousArticle": "https://www.ft.com/content/97266b9e-9408-11ea-abcd-371e24b679ed" },
   { "name": "Valor Econômico", "url": "valor.com.br", "famousArticle": "https://valor.globo.com/brasil/noticia/2025/12/23/previa-da-inflacao-ipca-15-sobe-025percent-em-dezembro-e-fecha-2025-com-alta-de-441percent.ghtml" },
   { "name": "The Washington Post", "url": "washingtonpost.com", "famousArticle": "https://www.washingtonpost.com/graphics/2020/national/police-shootings-2020/" },
+  { "name": "Quatro Rodas", "url": "quatrorodas.com.br", "famousArticle": "https://quatrorodas.abril.com.br/testes/caoa-chery-tiggo-7-pro-desvendamos-os-segredos-do-suv-medio-com-preco-de-compacto/" },
   { "name": "CNN", "url": "cnn.com", "famousArticle": "https://www.cnn.com/2020/04/26/health/us-coronavirus-sunday/index.html" },
   { "name": "BBC", "url": "bbc.com", "famousArticle": "https://www.bbc.com/news/world-51235105" },
   { "name": "The Guardian", "url": "theguardian.com", "famousArticle": "https://www.theguardian.com/environment/ng-interactive/2019/oct/09/revealed-20-firms-third-carbon-emissions" },
