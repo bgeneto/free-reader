@@ -18,6 +18,72 @@ interface AudioPlayerProps {
 
 type PlayerState = "idle" | "loading" | "playing" | "paused" | "error";
 
+interface AudioChunk {
+    text: string;
+    blob?: Blob;
+    audio?: HTMLAudioElement;
+    duration: number;
+    startOffset: number; // cumulative offset in total timeline
+    status: 'pending' | 'loading' | 'ready' | 'error';
+}
+
+// Stop tokens for intelligent text splitting (in priority order)
+const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ', '];
+const MIN_CHUNK_SIZE = 150;
+const MAX_CHUNK_SIZE = 400;
+
+/**
+ * Split text into chunks intelligently by stop tokens
+ * Respects min/max size constraints while preferring natural boundaries
+ */
+function splitTextIntoChunks(text: string): string[] {
+    const chunks: string[] = [];
+    let remaining = text.trim();
+
+    while (remaining.length > 0) {
+        // If remaining text is small enough, use it all
+        if (remaining.length <= MAX_CHUNK_SIZE) {
+            chunks.push(remaining);
+            break;
+        }
+
+        // Find the best split point within the max size
+        let splitIndex = -1;
+
+        // Search for stop tokens from the end of the max range backwards
+        for (const token of STOP_TOKENS) {
+            // Look for the last occurrence of this token within MAX_CHUNK_SIZE
+            const searchEnd = Math.min(MAX_CHUNK_SIZE, remaining.length);
+            const searchStart = MIN_CHUNK_SIZE;
+
+            // Find last occurrence between MIN and MAX
+            let lastIndex = -1;
+            let searchPos = remaining.lastIndexOf(token, searchEnd);
+
+            if (searchPos >= searchStart) {
+                lastIndex = searchPos + token.length;
+            }
+
+            if (lastIndex > splitIndex) {
+                splitIndex = lastIndex;
+                break; // Use the first (highest priority) token found
+            }
+        }
+
+        // If no good split point found, force split at max size
+        if (splitIndex <= MIN_CHUNK_SIZE) {
+            // Try to at least split at a word boundary
+            const spaceIndex = remaining.lastIndexOf(' ', MAX_CHUNK_SIZE);
+            splitIndex = spaceIndex > MIN_CHUNK_SIZE ? spaceIndex + 1 : MAX_CHUNK_SIZE;
+        }
+
+        chunks.push(remaining.substring(0, splitIndex).trim());
+        remaining = remaining.substring(splitIndex).trim();
+    }
+
+    return chunks.filter(chunk => chunk.length > 0);
+}
+
 export function AudioPlayer({
     text,
     voice,
@@ -26,13 +92,16 @@ export function AudioPlayer({
 }: AudioPlayerProps) {
     const [playerState, setPlayerState] = useState<PlayerState>("idle");
     const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
+    const [totalDuration, setTotalDuration] = useState(0);
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [chunks, setChunks] = useState<AudioChunk[]>([]);
+    const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+    const [loadedDuration, setLoadedDuration] = useState(0); // For visual loading indicator
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const audioUrlRef = useRef<string | null>(null);
+    const isPlayingRef = useRef(false);
 
     // Format time as mm:ss
     const formatTime = (seconds: number): string => {
@@ -41,65 +110,55 @@ export function AudioPlayer({
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    // Cleanup audio URL on unmount
+    // Initialize chunks when text changes
+    useEffect(() => {
+        const textChunks = splitTextIntoChunks(text);
+        const initialChunks: AudioChunk[] = textChunks.map((chunkText, index) => ({
+            text: chunkText,
+            duration: 0,
+            startOffset: 0,
+            status: 'pending',
+        }));
+        setChunks(initialChunks);
+        setCurrentChunkIndex(0);
+        setCurrentTime(0);
+        setTotalDuration(0);
+        setLoadedDuration(0);
+        setPlayerState("idle");
+    }, [text]);
+
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (audioUrlRef.current) {
-                URL.revokeObjectURL(audioUrlRef.current);
-            }
+            chunks.forEach(chunk => {
+                if (chunk.blob) {
+                    URL.revokeObjectURL(URL.createObjectURL(chunk.blob));
+                }
+            });
         };
     }, []);
 
-    // Handle audio element events
-    const setupAudioListeners = useCallback((audio: HTMLAudioElement) => {
-        audio.onloadedmetadata = () => {
-            setDuration(audio.duration);
-        };
+    // Load a specific chunk
+    const loadChunk = useCallback(async (index: number): Promise<AudioChunk | null> => {
+        if (index < 0 || index >= chunks.length) return null;
 
-        audio.ontimeupdate = () => {
-            setCurrentTime(audio.currentTime);
-        };
-
-        audio.onended = () => {
-            setPlayerState("paused");
-            setCurrentTime(0);
-            audio.currentTime = 0;
-        };
-
-        audio.onerror = () => {
-            setPlayerState("error");
-            setErrorMessage("Audio playback failed");
-        };
-
-        audio.onplay = () => {
-            setPlayerState("playing");
-        };
-
-        audio.onpause = () => {
-            if (playerState !== "error") {
-                setPlayerState("paused");
-            }
-        };
-    }, [playerState]);
-
-    // Generate and play audio
-    const handlePlay = async () => {
-        // If we already have audio loaded, just play it
-        if (audioRef.current && audioUrlRef.current) {
-            await audioRef.current.play();
-            return;
+        const chunk = chunks[index];
+        if (chunk.status === 'ready' || chunk.status === 'loading') {
+            return chunk;
         }
 
-        setPlayerState("loading");
-        setErrorMessage(null);
+        // Update status to loading
+        setChunks(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], status: 'loading' };
+            return updated;
+        });
 
         try {
             const response = await fetch("/api/tts", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ text, voice }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: chunk.text, voice }),
             });
 
             if (!response.ok) {
@@ -107,80 +166,273 @@ export function AudioPlayer({
                 throw new Error(errorData.error || `TTS failed: ${response.status}`);
             }
 
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
+            const blob = await response.blob();
+            const audio = new Audio(URL.createObjectURL(blob));
 
-            // Cleanup previous URL
-            if (audioUrlRef.current) {
-                URL.revokeObjectURL(audioUrlRef.current);
+            // Wait for metadata to get duration
+            await new Promise<void>((resolve, reject) => {
+                audio.onloadedmetadata = () => resolve();
+                audio.onerror = () => reject(new Error('Failed to load audio'));
+                // Fallback timeout
+                setTimeout(() => resolve(), 5000);
+            });
+
+            const duration = audio.duration || 0;
+
+            // Update chunk with audio data
+            setChunks(prev => {
+                const updated = [...prev];
+
+                // Calculate start offset based on previous chunks
+                let startOffset = 0;
+                for (let i = 0; i < index; i++) {
+                    startOffset += updated[i].duration;
+                }
+
+                updated[index] = {
+                    ...updated[index],
+                    blob,
+                    audio,
+                    duration,
+                    startOffset,
+                    status: 'ready',
+                };
+
+                // Recalculate total duration and loaded duration
+                let total = 0;
+                let loaded = 0;
+                updated.forEach(c => {
+                    if (c.status === 'ready') {
+                        loaded += c.duration;
+                    }
+                    total += c.duration || (c.text.length / 15); // Estimate ~15 chars/second
+                });
+                setTotalDuration(total);
+                setLoadedDuration(loaded);
+
+                return updated;
+            });
+
+            return { ...chunk, blob, audio, duration, status: 'ready' as const };
+        } catch (error) {
+            setChunks(prev => {
+                const updated = [...prev];
+                updated[index] = { ...updated[index], status: 'error' };
+                return updated;
+            });
+            throw error;
+        }
+    }, [chunks, voice]);
+
+    // Play a specific chunk
+    const playChunk = useCallback(async (index: number, startPosition = 0) => {
+        if (index >= chunks.length) {
+            // All chunks played
+            setPlayerState("paused");
+            setCurrentChunkIndex(0);
+            setCurrentTime(0);
+            isPlayingRef.current = false;
+            return;
+        }
+
+        let chunk = chunks[index];
+
+        // Load chunk if needed
+        if (chunk.status !== 'ready') {
+            setPlayerState("loading");
+            try {
+                const loadedChunk = await loadChunk(index);
+                if (!loadedChunk || loadedChunk.status !== 'ready') {
+                    throw new Error('Failed to load chunk');
+                }
+                chunk = loadedChunk;
+            } catch (error) {
+                setPlayerState("error");
+                setErrorMessage(error instanceof Error ? error.message : "Failed to load audio");
+                return;
             }
-            audioUrlRef.current = audioUrl;
+        }
 
-            const audio = new Audio(audioUrl);
-            audio.volume = isMuted ? 0 : volume;
-            audioRef.current = audio;
+        // Get the latest chunk data from state
+        const currentChunks = chunks;
+        const latestChunk = currentChunks[index];
+        if (!latestChunk?.audio) {
+            // Chunk might have been updated, try to get it from loadChunk result
+            if (!chunk.audio) {
+                setPlayerState("error");
+                setErrorMessage("Audio not available");
+                return;
+            }
+        }
 
-            setupAudioListeners(audio);
+        const audio = latestChunk?.audio || chunk.audio!;
+
+        // Stop current audio if playing
+        if (audioRef.current && audioRef.current !== audio) {
+            audioRef.current.pause();
+        }
+
+        audioRef.current = audio;
+        audio.volume = isMuted ? 0 : volume;
+        audio.currentTime = startPosition;
+
+        // Set up event listeners
+        audio.ontimeupdate = () => {
+            const chunkTime = audio.currentTime;
+            // Calculate total time across all chunks
+            let totalTime = 0;
+            for (let i = 0; i < index; i++) {
+                totalTime += currentChunks[i]?.duration || 0;
+            }
+            totalTime += chunkTime;
+            setCurrentTime(totalTime);
+        };
+
+        audio.onended = () => {
+            if (isPlayingRef.current) {
+                // Prefetch next chunk started earlier, now play it
+                setCurrentChunkIndex(index + 1);
+                playChunk(index + 1, 0);
+            }
+        };
+
+        audio.onerror = () => {
+            setPlayerState("error");
+            setErrorMessage("Audio playback failed");
+        };
+
+        try {
+            setCurrentChunkIndex(index);
+            setPlayerState("playing");
+            isPlayingRef.current = true;
             await audio.play();
+
+            // Prefetch next chunk while playing
+            if (index + 1 < chunks.length && chunks[index + 1]?.status === 'pending') {
+                loadChunk(index + 1).catch(() => { });
+            }
         } catch (error) {
             setPlayerState("error");
-            setErrorMessage(error instanceof Error ? error.message : "Failed to generate audio");
+            setErrorMessage(error instanceof Error ? error.message : "Failed to play audio");
         }
-    };
+    }, [chunks, isMuted, volume, loadChunk]);
 
-    // Pause audio
-    const handlePause = () => {
+    // Handle play button click
+    const handlePlay = useCallback(async () => {
+        // If we're paused on a chunk, resume it
+        if (playerState === "paused" && audioRef.current) {
+            try {
+                isPlayingRef.current = true;
+                setPlayerState("playing");
+                await audioRef.current.play();
+                return;
+            } catch {
+                // Fall through to start from current chunk
+            }
+        }
+
+        // Start playing from current chunk
+        await playChunk(currentChunkIndex, audioRef.current?.currentTime || 0);
+    }, [playerState, currentChunkIndex, playChunk]);
+
+    // Handle pause
+    const handlePause = useCallback(() => {
         if (audioRef.current) {
             audioRef.current.pause();
         }
-    };
+        isPlayingRef.current = false;
+        setPlayerState("paused");
+    }, []);
 
     // Toggle play/pause
-    const togglePlayPause = () => {
+    const togglePlayPause = useCallback(() => {
         if (playerState === "playing") {
             handlePause();
         } else {
             handlePlay();
         }
-    };
+    }, [playerState, handlePause, handlePlay]);
 
-    // Seek to position
-    const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!audioRef.current || duration === 0) return;
+    // Handle seek (only within loaded chunks)
+    const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (loadedDuration === 0) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const percentage = x / rect.width;
-        const newTime = percentage * duration;
 
-        audioRef.current.currentTime = newTime;
-        setCurrentTime(newTime);
-    };
+        // Calculate target time based on loaded duration (not total)
+        const targetTime = percentage * loadedDuration;
+
+        // Find which chunk contains this time
+        let accumulatedTime = 0;
+        let targetChunkIndex = 0;
+        let positionInChunk = 0;
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            if (chunk.status !== 'ready') break; // Can't seek past loaded chunks
+
+            if (accumulatedTime + chunk.duration > targetTime) {
+                targetChunkIndex = i;
+                positionInChunk = targetTime - accumulatedTime;
+                break;
+            }
+            accumulatedTime += chunk.duration;
+        }
+
+        // If we're on a different chunk, switch to it
+        if (targetChunkIndex !== currentChunkIndex) {
+            setCurrentChunkIndex(targetChunkIndex);
+            if (playerState === "playing") {
+                playChunk(targetChunkIndex, positionInChunk);
+            } else {
+                // Just set up the audio at the right position
+                const chunk = chunks[targetChunkIndex];
+                if (chunk?.audio) {
+                    if (audioRef.current && audioRef.current !== chunk.audio) {
+                        audioRef.current.pause();
+                    }
+                    audioRef.current = chunk.audio;
+                    chunk.audio.currentTime = positionInChunk;
+                    setCurrentTime(targetTime);
+                }
+            }
+        } else {
+            // Same chunk, just seek within it
+            if (audioRef.current) {
+                audioRef.current.currentTime = positionInChunk;
+                setCurrentTime(targetTime);
+            }
+        }
+    }, [chunks, currentChunkIndex, loadedDuration, playerState, playChunk]);
 
     // Toggle mute
-    const toggleMute = () => {
+    const toggleMute = useCallback(() => {
         if (audioRef.current) {
             audioRef.current.volume = isMuted ? volume : 0;
         }
         setIsMuted(!isMuted);
-    };
+    }, [isMuted, volume]);
 
     // Retry on error
-    const handleRetry = () => {
-        // Clear previous audio
-        if (audioUrlRef.current) {
-            URL.revokeObjectURL(audioUrlRef.current);
-            audioUrlRef.current = null;
-        }
-        audioRef.current = null;
+    const handleRetry = useCallback(() => {
         setPlayerState("idle");
         setErrorMessage(null);
+
+        // Reset failed chunks to pending
+        setChunks(prev => prev.map(chunk =>
+            chunk.status === 'error' ? { ...chunk, status: 'pending' as const } : chunk
+        ));
+
         handlePlay();
-    };
+    }, [handlePlay]);
 
-    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+    // Calculate progress percentages
+    const progress = loadedDuration > 0 ? (currentTime / loadedDuration) * 100 : 0;
+    const loadedProgress = totalDuration > 0 ? (loadedDuration / totalDuration) * 100 : 0;
 
-    // Compact mode - just a play button
+    // Compact mode - just a play button with loading indicator
     if (compact) {
         return (
             <Button
@@ -188,7 +440,7 @@ export function AudioPlayer({
                 size="icon-sm"
                 onClick={togglePlayPause}
                 disabled={playerState === "loading"}
-                className={cn("transition-all", className)}
+                className={cn("transition-all relative", className)}
                 aria-label={playerState === "playing" ? "Pause" : "Play"}
             >
                 {playerState === "loading" ? (
@@ -212,11 +464,11 @@ export function AudioPlayer({
                 variant="ghost"
                 size="icon-sm"
                 onClick={togglePlayPause}
-                disabled={playerState === "loading"}
+                disabled={playerState === "loading" && currentChunkIndex === 0}
                 className="shrink-0"
                 aria-label={playerState === "playing" ? "Pause" : "Play"}
             >
-                {playerState === "loading" ? (
+                {playerState === "loading" && currentChunkIndex === 0 ? (
                     <Loader2 className="size-4 animate-spin" />
                 ) : playerState === "playing" ? (
                     <Pause className="size-4" />
@@ -225,7 +477,7 @@ export function AudioPlayer({
                 )}
             </Button>
 
-            {/* Progress Bar */}
+            {/* Progress Bar with Loading Indicator */}
             <div
                 className="flex-1 cursor-pointer"
                 onClick={handleSeek}
@@ -236,17 +488,30 @@ export function AudioPlayer({
                 aria-valuenow={progress}
                 tabIndex={0}
             >
-                <div className="relative h-1.5 rounded-full bg-accent/50 overflow-hidden">
+                <div className="relative h-1.5 rounded-full bg-muted/30 overflow-hidden">
+                    {/* Loaded chunks indicator (lighter) */}
+                    <div
+                        className="absolute left-0 top-0 h-full rounded-full bg-accent/30 transition-all duration-300"
+                        style={{ width: `${loadedProgress}%` }}
+                    />
+                    {/* Playback progress (solid) */}
                     <div
                         className="absolute left-0 top-0 h-full rounded-full bg-accent transition-all duration-100"
-                        style={{ width: `${progress}%` }}
+                        style={{ width: `${Math.min(progress, loadedProgress)}%` }}
                     />
+                    {/* Loading indicator - subtle pulse when loading */}
+                    {playerState === "loading" && (
+                        <div
+                            className="absolute top-0 h-full w-8 bg-gradient-to-r from-transparent via-accent/50 to-transparent animate-pulse"
+                            style={{ left: `${loadedProgress}%` }}
+                        />
+                    )}
                 </div>
             </div>
 
             {/* Time Display */}
             <span className="shrink-0 text-xs text-muted-foreground tabular-nums min-w-[72px] text-right">
-                {formatTime(currentTime)} / {formatTime(duration)}
+                {formatTime(currentTime)} / {formatTime(loadedDuration || totalDuration)}
             </span>
 
             {/* Volume Toggle */}
