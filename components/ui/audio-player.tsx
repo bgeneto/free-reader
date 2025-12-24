@@ -361,23 +361,13 @@ export function AudioPlayer({
         }
     }, [isMuted, volume, loadChunk]);
 
-    // Handle play button click
+    // Handle play button click - always use playChunk to ensure listeners are set up
     const handlePlay = useCallback(async () => {
-        // If we're paused on a chunk, resume it
-        if (playerState === "paused" && audioRef.current) {
-            try {
-                isPlayingRef.current = true;
-                setPlayerState("playing");
-                await audioRef.current.play();
-                return;
-            } catch {
-                // Fall through to start from current chunk
-            }
-        }
-
-        // Start playing from current chunk
-        await playChunk(currentChunkIndex, audioRef.current?.currentTime || 0);
-    }, [playerState, currentChunkIndex, playChunk]);
+        // Get the current position within the chunk (if any)
+        const currentPosition = audioRef.current?.currentTime || 0;
+        // Always go through playChunk to ensure onended listener is properly set
+        await playChunk(currentChunkIndex, currentPosition);
+    }, [currentChunkIndex, playChunk]);
 
     // Handle pause
     const handlePause = useCallback(() => {
