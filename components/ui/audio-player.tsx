@@ -31,18 +31,28 @@ interface AudioChunk {
 const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ', '];
 const MIN_CHUNK_SIZE = 150;
 const MAX_CHUNK_SIZE = 400;
+const FIRST_CHUNK_MULTIPLIER = 1.4; // First chunk is larger to give time for second to load
 
 /**
  * Split text into chunks intelligently by stop tokens
  * Respects min/max size constraints while preferring natural boundaries
+ * First chunk is larger (FIRST_CHUNK_MULTIPLIER) to ensure smooth streaming
  */
 function splitTextIntoChunks(text: string): string[] {
     const chunks: string[] = [];
     let remaining = text.trim();
+    let isFirstChunk = true;
 
     while (remaining.length > 0) {
+        const maxSize = isFirstChunk
+            ? Math.floor(MAX_CHUNK_SIZE * FIRST_CHUNK_MULTIPLIER)
+            : MAX_CHUNK_SIZE;
+        const minSize = isFirstChunk
+            ? Math.floor(MIN_CHUNK_SIZE * FIRST_CHUNK_MULTIPLIER)
+            : MIN_CHUNK_SIZE;
+
         // If remaining text is small enough, use it all
-        if (remaining.length <= MAX_CHUNK_SIZE) {
+        if (remaining.length <= maxSize) {
             chunks.push(remaining);
             break;
         }
@@ -52,33 +62,28 @@ function splitTextIntoChunks(text: string): string[] {
 
         // Search for stop tokens from the end of the max range backwards
         for (const token of STOP_TOKENS) {
-            // Look for the last occurrence of this token within MAX_CHUNK_SIZE
-            const searchEnd = Math.min(MAX_CHUNK_SIZE, remaining.length);
-            const searchStart = MIN_CHUNK_SIZE;
+            // Look for the last occurrence of this token within maxSize
+            const searchEnd = Math.min(maxSize, remaining.length);
 
-            // Find last occurrence between MIN and MAX
-            let lastIndex = -1;
+            // Find last occurrence between min and max
             let searchPos = remaining.lastIndexOf(token, searchEnd);
 
-            if (searchPos >= searchStart) {
-                lastIndex = searchPos + token.length;
-            }
-
-            if (lastIndex > splitIndex) {
-                splitIndex = lastIndex;
+            if (searchPos >= minSize) {
+                splitIndex = searchPos + token.length;
                 break; // Use the first (highest priority) token found
             }
         }
 
         // If no good split point found, force split at max size
-        if (splitIndex <= MIN_CHUNK_SIZE) {
+        if (splitIndex <= minSize) {
             // Try to at least split at a word boundary
-            const spaceIndex = remaining.lastIndexOf(' ', MAX_CHUNK_SIZE);
-            splitIndex = spaceIndex > MIN_CHUNK_SIZE ? spaceIndex + 1 : MAX_CHUNK_SIZE;
+            const spaceIndex = remaining.lastIndexOf(' ', maxSize);
+            splitIndex = spaceIndex > minSize ? spaceIndex + 1 : maxSize;
         }
 
         chunks.push(remaining.substring(0, splitIndex).trim());
         remaining = remaining.substring(splitIndex).trim();
+        isFirstChunk = false;
     }
 
     return chunks.filter(chunk => chunk.length > 0);
@@ -98,10 +103,16 @@ export function AudioPlayer({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [chunks, setChunks] = useState<AudioChunk[]>([]);
     const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-    const [loadedDuration, setLoadedDuration] = useState(0); // For visual loading indicator
+    const [loadedDuration, setLoadedDuration] = useState(0);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const isPlayingRef = useRef(false);
+    const chunksRef = useRef<AudioChunk[]>([]); // Keep a ref for real-time access in callbacks
+
+    // Keep chunksRef in sync with chunks state
+    useEffect(() => {
+        chunksRef.current = chunks;
+    }, [chunks]);
 
     // Format time as mm:ss
     const formatTime = (seconds: number): string => {
@@ -113,13 +124,14 @@ export function AudioPlayer({
     // Initialize chunks when text changes
     useEffect(() => {
         const textChunks = splitTextIntoChunks(text);
-        const initialChunks: AudioChunk[] = textChunks.map((chunkText, index) => ({
+        const initialChunks: AudioChunk[] = textChunks.map((chunkText) => ({
             text: chunkText,
             duration: 0,
             startOffset: 0,
             status: 'pending',
         }));
         setChunks(initialChunks);
+        chunksRef.current = initialChunks;
         setCurrentChunkIndex(0);
         setCurrentTime(0);
         setTotalDuration(0);
@@ -130,7 +142,7 @@ export function AudioPlayer({
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            chunks.forEach(chunk => {
+            chunksRef.current.forEach(chunk => {
                 if (chunk.blob) {
                     URL.revokeObjectURL(URL.createObjectURL(chunk.blob));
                 }
@@ -140,9 +152,10 @@ export function AudioPlayer({
 
     // Load a specific chunk
     const loadChunk = useCallback(async (index: number): Promise<AudioChunk | null> => {
-        if (index < 0 || index >= chunks.length) return null;
+        const currentChunks = chunksRef.current;
+        if (index < 0 || index >= currentChunks.length) return null;
 
-        const chunk = chunks[index];
+        const chunk = currentChunks[index];
         if (chunk.status === 'ready' || chunk.status === 'loading') {
             return chunk;
         }
@@ -151,6 +164,7 @@ export function AudioPlayer({
         setChunks(prev => {
             const updated = [...prev];
             updated[index] = { ...updated[index], status: 'loading' };
+            chunksRef.current = updated;
             return updated;
         });
 
@@ -173,17 +187,16 @@ export function AudioPlayer({
             await new Promise<void>((resolve, reject) => {
                 audio.onloadedmetadata = () => resolve();
                 audio.onerror = () => reject(new Error('Failed to load audio'));
-                // Fallback timeout
                 setTimeout(() => resolve(), 5000);
             });
 
             const duration = audio.duration || 0;
 
-            // Update chunk with audio data
+            // Update chunk with audio data and recalculate offsets
             setChunks(prev => {
                 const updated = [...prev];
 
-                // Calculate start offset based on previous chunks
+                // Calculate start offset based on previous chunks' actual durations
                 let startOffset = 0;
                 for (let i = 0; i < index; i++) {
                     startOffset += updated[i].duration;
@@ -204,38 +217,57 @@ export function AudioPlayer({
                 updated.forEach(c => {
                     if (c.status === 'ready') {
                         loaded += c.duration;
+                        total += c.duration;
+                    } else {
+                        // Estimate ~15 chars/second for pending chunks
+                        total += c.text.length / 15;
                     }
-                    total += c.duration || (c.text.length / 15); // Estimate ~15 chars/second
                 });
                 setTotalDuration(total);
                 setLoadedDuration(loaded);
 
+                // Recalculate all startOffsets for consistency
+                let offset = 0;
+                for (let i = 0; i < updated.length; i++) {
+                    updated[i].startOffset = offset;
+                    offset += updated[i].duration || (updated[i].text.length / 15);
+                }
+
+                chunksRef.current = updated;
                 return updated;
             });
 
-            return { ...chunk, blob, audio, duration, status: 'ready' as const };
+            return { ...chunk, blob, audio, duration, startOffset: 0, status: 'ready' as const };
         } catch (error) {
             setChunks(prev => {
                 const updated = [...prev];
                 updated[index] = { ...updated[index], status: 'error' };
+                chunksRef.current = updated;
                 return updated;
             });
             throw error;
         }
-    }, [chunks, voice]);
+    }, [voice]);
 
     // Play a specific chunk
     const playChunk = useCallback(async (index: number, startPosition = 0) => {
-        if (index >= chunks.length) {
-            // All chunks played
+        const currentChunks = chunksRef.current;
+
+        if (index >= currentChunks.length) {
+            // All chunks played - reset to beginning
             setPlayerState("paused");
             setCurrentChunkIndex(0);
-            setCurrentTime(0);
+            // Calculate total played duration
+            let totalPlayed = 0;
+            for (const c of chunksRef.current) {
+                totalPlayed += c.duration;
+            }
+            setCurrentTime(totalPlayed);
             isPlayingRef.current = false;
             return;
         }
 
-        let chunk = chunks[index];
+        let chunk = currentChunks[index];
 
         // Load chunk if needed
         if (chunk.status !== 'ready') {
@@ -245,7 +277,8 @@ export function AudioPlayer({
                 if (!loadedChunk || loadedChunk.status !== 'ready') {
                     throw new Error('Failed to load chunk');
                 }
-                chunk = loadedChunk;
+                // Get updated chunk from ref after loading
+                chunk = chunksRef.current[index];
             } catch (error) {
                 setPlayerState("error");
                 setErrorMessage(error instanceof Error ? error.message : "Failed to load audio");
@@ -253,44 +286,35 @@ export function AudioPlayer({
             }
         }
 
-        // Get the latest chunk data from state
-        const currentChunks = chunks;
-        const latestChunk = currentChunks[index];
-        if (!latestChunk?.audio) {
-            // Chunk might have been updated, try to get it from loadChunk result
-            if (!chunk.audio) {
-                setPlayerState("error");
-                setErrorMessage("Audio not available");
-                return;
-            }
+        const audio = chunk.audio;
+        if (!audio) {
+            setPlayerState("error");
+            setErrorMessage("Audio not available");
+            return;
         }
 
-        const audio = latestChunk?.audio || chunk.audio!;
-
-        // Stop current audio if playing
+        // Stop current audio if playing different chunk
         if (audioRef.current && audioRef.current !== audio) {
             audioRef.current.pause();
+            audioRef.current.ontimeupdate = null;
+            audioRef.current.onended = null;
         }
 
         audioRef.current = audio;
         audio.volume = isMuted ? 0 : volume;
         audio.currentTime = startPosition;
 
-        // Set up event listeners
+        // Set up event listeners - use chunksRef for real-time access
         audio.ontimeupdate = () => {
             const chunkTime = audio.currentTime;
-            // Calculate total time across all chunks
-            let totalTime = 0;
-            for (let i = 0; i < index; i++) {
-                totalTime += currentChunks[i]?.duration || 0;
-            }
-            totalTime += chunkTime;
-            setCurrentTime(totalTime);
+            // Get the startOffset of current chunk from ref (most up-to-date)
+            const currentChunk = chunksRef.current[index];
+            const startOffset = currentChunk?.startOffset || 0;
+            setCurrentTime(startOffset + chunkTime);
         };
 
         audio.onended = () => {
             if (isPlayingRef.current) {
-                // Prefetch next chunk started earlier, now play it
                 setCurrentChunkIndex(index + 1);
                 playChunk(index + 1, 0);
             }
@@ -307,15 +331,16 @@ export function AudioPlayer({
             isPlayingRef.current = true;
             await audio.play();
 
-            // Prefetch next chunk while playing
-            if (index + 1 < chunks.length && chunks[index + 1]?.status === 'pending') {
+            // Prefetch next chunk while playing (if not already loaded/loading)
+            const nextChunk = chunksRef.current[index + 1];
+            if (nextChunk && nextChunk.status === 'pending') {
                 loadChunk(index + 1).catch(() => { });
             }
         } catch (error) {
             setPlayerState("error");
             setErrorMessage(error instanceof Error ? error.message : "Failed to play audio");
         }
-    }, [chunks, isMuted, volume, loadChunk]);
+    }, [isMuted, volume, loadChunk]);
 
     // Handle play button click
     const handlePlay = useCallback(async () => {
@@ -355,57 +380,75 @@ export function AudioPlayer({
 
     // Handle seek (only within loaded chunks)
     const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (loadedDuration === 0) return;
+        if (totalDuration === 0) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const percentage = x / rect.width;
 
-        // Calculate target time based on loaded duration (not total)
-        const targetTime = percentage * loadedDuration;
+        // Calculate target time based on TOTAL duration
+        const targetTime = percentage * totalDuration;
 
         // Find which chunk contains this time
         let accumulatedTime = 0;
         let targetChunkIndex = 0;
         let positionInChunk = 0;
 
-        for (let i = 0; i < chunks.length; i++) {
-            const chunk = chunks[i];
-            if (chunk.status !== 'ready') break; // Can't seek past loaded chunks
+        const currentChunks = chunksRef.current;
+        for (let i = 0; i < currentChunks.length; i++) {
+            const chunk = currentChunks[i];
+            const chunkDuration = chunk.duration || (chunk.text.length / 15);
 
-            if (accumulatedTime + chunk.duration > targetTime) {
+            if (accumulatedTime + chunkDuration > targetTime) {
                 targetChunkIndex = i;
                 positionInChunk = targetTime - accumulatedTime;
+
+                // If seeking to unloaded chunk, clamp to loaded area
+                if (chunk.status !== 'ready') {
+                    // Find the last loaded chunk
+                    for (let j = i - 1; j >= 0; j--) {
+                        if (currentChunks[j].status === 'ready') {
+                            targetChunkIndex = j;
+                            positionInChunk = currentChunks[j].duration; // Seek to end of last loaded
+                            break;
+                        }
+                    }
+                }
                 break;
             }
-            accumulatedTime += chunk.duration;
+            accumulatedTime += chunkDuration;
         }
+
+        const targetChunk = currentChunks[targetChunkIndex];
+        if (!targetChunk || targetChunk.status !== 'ready') {
+            return; // Can't seek to unloaded chunk
+        }
+
+        // Clamp position within chunk duration
+        positionInChunk = Math.max(0, Math.min(positionInChunk, targetChunk.duration));
 
         // If we're on a different chunk, switch to it
         if (targetChunkIndex !== currentChunkIndex) {
             setCurrentChunkIndex(targetChunkIndex);
             if (playerState === "playing") {
                 playChunk(targetChunkIndex, positionInChunk);
-            } else {
+            } else if (targetChunk.audio) {
                 // Just set up the audio at the right position
-                const chunk = chunks[targetChunkIndex];
-                if (chunk?.audio) {
-                    if (audioRef.current && audioRef.current !== chunk.audio) {
-                        audioRef.current.pause();
-                    }
-                    audioRef.current = chunk.audio;
-                    chunk.audio.currentTime = positionInChunk;
-                    setCurrentTime(targetTime);
+                if (audioRef.current && audioRef.current !== targetChunk.audio) {
+                    audioRef.current.pause();
                 }
+                audioRef.current = targetChunk.audio;
+                targetChunk.audio.currentTime = positionInChunk;
+                setCurrentTime(targetChunk.startOffset + positionInChunk);
             }
         } else {
             // Same chunk, just seek within it
             if (audioRef.current) {
                 audioRef.current.currentTime = positionInChunk;
-                setCurrentTime(targetTime);
+                setCurrentTime(targetChunk.startOffset + positionInChunk);
             }
         }
-    }, [chunks, currentChunkIndex, loadedDuration, playerState, playChunk]);
+    }, [totalDuration, currentChunkIndex, playerState, playChunk]);
 
     // Toggle mute
     const toggleMute = useCallback(() => {
@@ -421,15 +464,19 @@ export function AudioPlayer({
         setErrorMessage(null);
 
         // Reset failed chunks to pending
-        setChunks(prev => prev.map(chunk =>
-            chunk.status === 'error' ? { ...chunk, status: 'pending' as const } : chunk
-        ));
+        setChunks(prev => {
+            const updated = prev.map(chunk =>
+                chunk.status === 'error' ? { ...chunk, status: 'pending' as const } : chunk
+            );
+            chunksRef.current = updated;
+            return updated;
+        });
 
         handlePlay();
     }, [handlePlay]);
 
     // Calculate progress percentages
-    const progress = loadedDuration > 0 ? (currentTime / loadedDuration) * 100 : 0;
+    const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
     const loadedProgress = totalDuration > 0 ? (loadedDuration / totalDuration) * 100 : 0;
 
     // Compact mode - just a play button with loading indicator
@@ -497,13 +544,13 @@ export function AudioPlayer({
                     {/* Playback progress (solid) */}
                     <div
                         className="absolute left-0 top-0 h-full rounded-full bg-accent transition-all duration-100"
-                        style={{ width: `${Math.min(progress, loadedProgress)}%` }}
+                        style={{ width: `${Math.min(progress, 100)}%` }}
                     />
                     {/* Loading indicator - subtle pulse when loading */}
                     {playerState === "loading" && (
                         <div
                             className="absolute top-0 h-full w-8 bg-gradient-to-r from-transparent via-accent/50 to-transparent animate-pulse"
-                            style={{ left: `${loadedProgress}%` }}
+                            style={{ left: `${Math.min(loadedProgress, 92)}%` }}
                         />
                     )}
                 </div>
@@ -511,7 +558,7 @@ export function AudioPlayer({
 
             {/* Time Display */}
             <span className="shrink-0 text-xs text-muted-foreground tabular-nums min-w-[72px] text-right">
-                {formatTime(currentTime)} / {formatTime(loadedDuration || totalDuration)}
+                {formatTime(currentTime)} / {formatTime(totalDuration)}
             </span>
 
             {/* Volume Toggle */}
