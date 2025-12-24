@@ -356,9 +356,9 @@ async function fetchFromJinaPremium(
                 "Accept": "application/json",
                 "Authorization": `Bearer ${apiKey}`,
                 "X-Engine": "browser",
-                "X-Respond-With": "readerlm-v2",
                 "X-Timeout": "15",
-                "X-Token-Budget": "150000"
+                "X-Token-Budget": "75000",
+                "X-With-Links-Summary": "true"
             },
             signal: controller.signal,
         });
