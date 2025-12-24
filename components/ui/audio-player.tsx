@@ -100,10 +100,16 @@ export function AudioPlayer({
     const isPlayingRef = useRef(false);
     const chunksRef = useRef<AudioChunk[]>([]);
     const loadingPromises = useRef<Map<number, Promise<AudioChunk | null>>>(new Map());
+    const playbackSpeedRef = useRef(1);
 
     useEffect(() => {
         chunksRef.current = chunks;
     }, [chunks]);
+
+    // Keep speed ref in sync with state
+    useEffect(() => {
+        playbackSpeedRef.current = playbackSpeed;
+    }, [playbackSpeed]);
 
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -320,7 +326,8 @@ export function AudioPlayer({
 
         audioRef.current = audio;
         audio.volume = isMuted ? 0 : volume;
-        audio.playbackRate = playbackSpeed;
+        // Use ref for speed to always get current value (not stale closure)
+        audio.playbackRate = playbackSpeedRef.current;
         audio.currentTime = startPosition;
 
         // Capture values for callbacks

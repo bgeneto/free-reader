@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { LANGUAGES, Source, ArticleResponse } from "@/types/api";
 import { Button } from "../ui/button";
 import {
@@ -61,6 +62,7 @@ interface SummaryFormProps {
 }
 
 export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = true, usePortal = true }: SummaryFormProps) {
+  const t = useTranslations("summary");
   // Minimum character threshold for summary eligibility
   const MIN_CHARS_FOR_SUMMARY = 400;
 
@@ -287,7 +289,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
             <div className="rounded-[14px] bg-accent/50 p-0.5">
               <div className="rounded-xl bg-card p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">Daily summaries</span>
+                  <span className="text-xs text-muted-foreground">{t("dailySummaries")}</span>
                   <span className="text-xs font-medium">{usageCount}/{usageLimit}</span>
                 </div>
                 <div className="h-1.5 bg-accent rounded-full overflow-hidden">
@@ -330,11 +332,11 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                   </div>
                   <div className="flex flex-1 items-center justify-between">
                     <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Executive Summary
+                      {t("executiveSummary")}
                     </h3>
                     {isLoading && (
                       <span className="text-xs text-accent animate-pulse">
-                        {completion ? "Streaming..." : "Generating..."}
+                        {completion ? t("streaming") : t("generating")}
                       </span>
                     )}
                   </div>
@@ -393,7 +395,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                     <div className="flex w-full items-center gap-2 truncate text-left">
                       <span>{SOURCE_LABELS[selectedSource]}</span>
                       {longestAvailableSource === selectedSource && (
-                        <span className="text-xs font-normal text-accent">Best</span>
+                        <span className="text-xs font-normal text-accent">{t("best")}</span>
                       )}
                     </div>
                   </SelectTrigger>
@@ -407,7 +409,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                             <span>{SOURCE_LABELS[source]}</span>
                             {length > 0 && <span className="text-muted-foreground">• {length.toLocaleString()} chars</span>}
                             {status.label && <span className="text-muted-foreground">• {status.label}</span>}
-                            {longestAvailableSource === source && !status.disabled && <span className="text-accent">• Best</span>}
+                            {longestAvailableSource === source && !status.disabled && <span className="text-accent">• {t("best")}</span>}
                           </span>
                         </SelectItem>
                       );
@@ -446,14 +448,14 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
                 disabled={isLoading || shouldDisableSource || !selectedArticle?.article?.textContent}
                 className="h-9 shrink-0 px-4 text-sm font-medium transition-all active:scale-95"
               >
-                {isLoading ? "Generating..." : processedCompletion ? "Update" : "Generate"}
+                {isLoading ? t("generating") : processedCompletion ? t("update") : t("generate")}
               </Button>
             </div>
           </div>
 
           {!manualSource && hasArticleData && (
             <p className="truncate px-2 text-center text-[10px] text-muted-foreground">
-              Auto-selected best source ({contentLengths[selectedSource].toLocaleString()} chars)
+              {t("autoSelectedBestSource", { count: contentLengths[selectedSource].toLocaleString() })}
             </p>
           )}
         </form>

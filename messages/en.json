@@ -194,11 +194,38 @@
     "includeSources": "Include sources",
     "all": "All",
     "none": "None",
-    "sources": "Sources"
+    "sources": "Sources",
+    "copied": "Copied"
   },
   "bookmarklet": {
     "linkText": "{siteName} bookmarklet",
     "dragTip": "Drag to bookmarks bar"
+  },
+  "summary": {
+    "summary": "Summary",
+    "generateSummary": "Generate Summary",
+    "dailySummaries": "Daily summaries",
+    "executiveSummary": "EXECUTIVE SUMMARY",
+    "autoSelectedBestSource": "Auto-selected best source ({count} chars)",
+    "generating": "Generating...",
+    "streaming": "Streaming...",
+    "update": "Update",
+    "generate": "Generate",
+    "best": "Best"
+  },
+  "proxy": {
+    "reader": "reader",
+    "original": "original",
+    "iframe": "iframe",
+    "settings": "Settings",
+    "customizeView": "Customize view and appearance",
+    "viewMode": "View Mode",
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "support": "Support",
+    "reportBugFeedback": "Report Bug / Feedback"
   },
   "common": {
     "premium": "Premium",

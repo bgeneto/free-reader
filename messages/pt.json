@@ -194,11 +194,38 @@
     "includeSources": "Incluir fontes",
     "all": "Todas",
     "none": "Nenhuma",
-    "sources": "Fontes"
+    "sources": "Fontes",
+    "copied": "Copiado"
   },
   "bookmarklet": {
     "linkText": "bookmarklet {siteName}",
     "dragTip": "Arraste para a barra de favoritos"
+  },
+  "summary": {
+    "summary": "Resumo",
+    "generateSummary": "Gerar Resumo",
+    "dailySummaries": "Resumos diários",
+    "executiveSummary": "RESUMO EXECUTIVO",
+    "autoSelectedBestSource": "Melhor fonte selecionada automaticamente ({count} caracteres)",
+    "generating": "Gerando...",
+    "streaming": "Transmitindo...",
+    "update": "Atualizar",
+    "generate": "Gerar",
+    "best": "Melhor"
+  },
+  "proxy": {
+    "reader": "leitor",
+    "original": "original",
+    "iframe": "iframe",
+    "settings": "Configurações",
+    "customizeView": "Personalizar visualização e aparência",
+    "viewMode": "Modo de Visualização",
+    "appearance": "Aparência",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema",
+    "support": "Suporte",
+    "reportBugFeedback": "Reportar Bug / Feedback"
   },
   "common": {
     "premium": "Premium",

@@ -194,11 +194,38 @@
     "includeSources": "Bronnen opnemen",
     "all": "Alle",
     "none": "Geen",
-    "sources": "Bronnen"
+    "sources": "Bronnen",
+    "copied": "Gekopieerd"
   },
   "bookmarklet": {
     "linkText": "{siteName} bookmarklet",
     "dragTip": "Sleep naar bladwijzerbalk"
+  },
+  "summary": {
+    "summary": "Samenvatting",
+    "generateSummary": "Samenvatting maken",
+    "dailySummaries": "Dagelijkse samenvattingen",
+    "executiveSummary": "SAMENVATTING",
+    "autoSelectedBestSource": "Beste bron automatisch geselecteerd ({count} tekens)",
+    "generating": "Genereren...",
+    "streaming": "Streamen...",
+    "update": "Bijwerken",
+    "generate": "Genereren",
+    "best": "Beste"
+  },
+  "proxy": {
+    "reader": "lezer",
+    "original": "origineel",
+    "iframe": "iframe",
+    "settings": "Instellingen",
+    "customizeView": "Weergave en uiterlijk aanpassen",
+    "viewMode": "Weergavemodus",
+    "appearance": "Uiterlijk",
+    "light": "Licht",
+    "dark": "Donker",
+    "system": "Systeem",
+    "support": "Ondersteuning",
+    "reportBugFeedback": "Bug melden / Feedback"
   },
   "common": {
     "premium": "Premium",

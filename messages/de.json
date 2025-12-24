@@ -194,11 +194,38 @@
     "includeSources": "Quellen einbeziehen",
     "all": "Alle",
     "none": "Keine",
-    "sources": "Quellen"
+    "sources": "Quellen",
+    "copied": "Kopiert"
   },
   "bookmarklet": {
     "linkText": "{siteName} Bookmarklet",
     "dragTip": "In Lesezeichen-Leiste ziehen"
+  },
+  "summary": {
+    "summary": "Zusammenfassung",
+    "generateSummary": "Zusammenfassung erstellen",
+    "dailySummaries": "Tägliche Zusammenfassungen",
+    "executiveSummary": "ZUSAMMENFASSUNG",
+    "autoSelectedBestSource": "Beste Quelle automatisch ausgewählt ({count} Zeichen)",
+    "generating": "Wird erstellt...",
+    "streaming": "Streamen...",
+    "update": "Aktualisieren",
+    "generate": "Erstellen",
+    "best": "Beste"
+  },
+  "proxy": {
+    "reader": "Leser",
+    "original": "Original",
+    "iframe": "Iframe",
+    "settings": "Einstellungen",
+    "customizeView": "Ansicht und Erscheinungsbild anpassen",
+    "viewMode": "Ansichtsmodus",
+    "appearance": "Erscheinungsbild",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System",
+    "support": "Support",
+    "reportBugFeedback": "Bug melden / Feedback"
   },
   "common": {
     "premium": "Premium",

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Check, Copy, ChevronDown, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 import {
   Menu,
   MenuTrigger,
@@ -65,6 +66,7 @@ export function CopyPageDropdown({
   className,
   triggerVariant = "default",
 }: CopyPageDropdownProps) {
+  const t = useTranslations("copyPage");
   const [copied, setCopied] = useState(false);
   const [selectedSources, setSelectedSources] = useState<Set<number>>(
     new Set(sources.map((_, i) => i))
@@ -182,9 +184,9 @@ export function CopyPageDropdown({
               <Copy className="size-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium">Copy page</span>
+              <span className="text-sm font-medium">{t("copyPage")}</span>
               <span className="text-xs text-muted-foreground">
-                Copy as Markdown for LLMs
+                {t("copyAsMarkdown")}
               </span>
             </div>
             {copied && <Check className="ml-auto size-4 text-green-600" />}
@@ -202,11 +204,11 @@ export function CopyPageDropdown({
             </div>
             <div className="flex flex-1 flex-col">
               <span className="flex items-center gap-1 text-sm font-medium">
-                Open in ChatGPT
+                {t("openInChatGPT")}
                 <ArrowUpRight className="size-3 text-muted-foreground" />
               </span>
               <span className="text-xs text-muted-foreground">
-                Ask questions about this page
+                {t("askQuestions")}
               </span>
             </div>
           </MenuItem>
@@ -220,11 +222,11 @@ export function CopyPageDropdown({
             </div>
             <div className="flex flex-1 flex-col">
               <span className="flex items-center gap-1 text-sm font-medium">
-                Open in Claude
+                {t("openInClaude")}
                 <ArrowUpRight className="size-3 text-muted-foreground" />
               </span>
               <span className="text-xs text-muted-foreground">
-                Ask questions about this page
+                {t("askQuestions")}
               </span>
             </div>
           </MenuItem>
@@ -234,7 +236,7 @@ export function CopyPageDropdown({
             <>
               <MenuSeparator />
               <MenuGroupLabel className="flex items-center justify-between">
-                <span>Include sources</span>
+                <span>{t("includeSources")}</span>
                 <div className="flex gap-1">
                   <button
                     onClick={(e) => {
@@ -243,7 +245,7 @@ export function CopyPageDropdown({
                     }}
                     className="text-[10px] text-primary hover:underline"
                   >
-                    All
+                    {t("all")}
                   </button>
                   <span className="text-muted-foreground">/</span>
                   <button
@@ -253,7 +255,7 @@ export function CopyPageDropdown({
                     }}
                     className="text-[10px] text-primary hover:underline"
                   >
-                    None
+                    {t("none")}
                   </button>
                 </div>
               </MenuGroupLabel>
@@ -293,7 +295,7 @@ export function CopyPageDropdown({
           ) : (
             <Copy className="size-3.5" />
           )}
-          {copied ? "Copied" : "Copy page"}
+          {copied ? t("copied") : t("copyPage")}
         </Button>
 
         {/* Divider */}
@@ -327,9 +329,9 @@ export function CopyPageDropdown({
                 <Copy className="size-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">Copy page</span>
+                <span className="text-sm font-medium">{t("copyPage")}</span>
                 <span className="text-xs text-muted-foreground">
-                  Copy as Markdown for LLMs
+                  {t("copyAsMarkdown")}
                 </span>
               </div>
               {copied && <Check className="ml-auto size-4 text-green-600" />}
@@ -347,11 +349,11 @@ export function CopyPageDropdown({
               </div>
               <div className="flex flex-1 flex-col">
                 <span className="flex items-center gap-1 text-sm font-medium">
-                  Open in ChatGPT
+                  {t("openInChatGPT")}
                   <ArrowUpRight className="size-3 text-muted-foreground" />
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Ask questions about this page
+                  {t("askQuestions")}
                 </span>
               </div>
             </MenuItem>
@@ -365,11 +367,11 @@ export function CopyPageDropdown({
               </div>
               <div className="flex flex-1 flex-col">
                 <span className="flex items-center gap-1 text-sm font-medium">
-                  Open in Claude
+                  {t("openInClaude")}
                   <ArrowUpRight className="size-3 text-muted-foreground" />
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Ask questions about this page
+                  {t("askQuestions")}
                 </span>
               </div>
             </MenuItem>
@@ -379,7 +381,7 @@ export function CopyPageDropdown({
               <>
                 <MenuSeparator />
                 <MenuGroupLabel className="flex items-center justify-between">
-                  <span>Include sources</span>
+                  <span>{t("includeSources")}</span>
                   <div className="flex gap-1">
                     <button
                       onClick={(e) => {
@@ -388,7 +390,7 @@ export function CopyPageDropdown({
                       }}
                       className="text-[10px] text-primary hover:underline"
                     >
-                      All
+                      {t("all")}
                     </button>
                     <span className="text-muted-foreground">/</span>
                     <button
@@ -398,7 +400,7 @@ export function CopyPageDropdown({
                       }}
                       className="text-[10px] text-primary hover:underline"
                     >
-                      None
+                      {t("none")}
                     </button>
                   </div>
                 </MenuGroupLabel>

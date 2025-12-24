@@ -27,6 +27,7 @@ import ShareButton from "@/components/features/share-button";
 import { CopyPageDropdown } from "@/components/features/copy-page-dropdown";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import ArrowTabs from "@/components/article/tabs";
 import {
   Drawer,
@@ -112,6 +113,8 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
   const { results, triggerJinaFetch } = useArticles(url);
   const { theme, setTheme } = useTheme();
   const { isPremium, isLoading } = useIsPremium();
+  const t = useTranslations("proxy");
+  const tSummary = useTranslations("summary");
 
   const viewModes = ["markdown", "html", "iframe"] as const;
 
@@ -221,7 +224,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 )}
               >
-                reader
+                {t("reader")}
               </button>
               <button
                 onClick={() => handleViewModeChange("html")}
@@ -232,7 +235,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 )}
               >
-                original
+                {t("original")}
               </button>
               <button
                 onClick={() => handleViewModeChange("iframe")}
@@ -243,7 +246,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 )}
               >
-                iframe
+                {t("iframe")}
               </button>
             </div>
           </div>
@@ -263,7 +266,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                 onClick={() => handleSidebarChange(!sidebarOpen)}
               >
                 <SparklesIcon className="size-3.5" />
-                Summary
+                {tSummary("summary")}
               </Button>
 
               <ShareButton
@@ -459,16 +462,16 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                 />
                 <DrawerContent>
                   <DrawerHeader className="text-left border-b border-border pb-4">
-                    <DrawerTitle>Settings</DrawerTitle>
+                    <DrawerTitle>{t("settings")}</DrawerTitle>
                     <DrawerDescription>
-                      Customize view and appearance
+                      {t("customizeView")}
                     </DrawerDescription>
                   </DrawerHeader>
                   <div className="p-4 space-y-6 pb-8">
                     {/* View Mode Section */}
                     <div className="space-y-3">
                       <label className="text-sm font-medium text-muted-foreground">
-                        View Mode
+                        {t("viewMode")}
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         <Button
@@ -482,7 +485,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           }}
                           className="w-full"
                         >
-                          Reader
+                          {t("reader")}
                         </Button>
                         <Button
                           variant={viewMode === "html" ? "secondary" : "outline"}
@@ -493,7 +496,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           }}
                           className="w-full"
                         >
-                          Original
+                          {t("original")}
                         </Button>
                         <Button
                           variant={
@@ -506,7 +509,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           }}
                           className="w-full"
                         >
-                          Iframe
+                          {t("iframe")}
                         </Button>
                       </div>
                     </div>
@@ -514,7 +517,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                     {/* Appearance Section */}
                     <div className="space-y-3">
                       <label className="text-sm font-medium text-muted-foreground">
-                        Appearance
+                        {t("appearance")}
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         <Button
@@ -524,7 +527,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           className="w-full"
                         >
                           <Sun className="mr-2 size-4" />
-                          Light
+                          {t("light")}
                         </Button>
                         <Button
                           variant={theme === "dark" ? "secondary" : "outline"}
@@ -533,7 +536,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           className="w-full"
                         >
                           <Moon className="mr-2 size-4" />
-                          Dark
+                          {t("dark")}
                         </Button>
                         <Button
                           variant={theme === "system" ? "secondary" : "outline"}
@@ -542,7 +545,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                           className="w-full"
                         >
                           <Laptop className="mr-2 size-4" />
-                          System
+                          {t("system")}
                         </Button>
                       </div>
                     </div>
@@ -550,7 +553,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                     {/* Support Section */}
                     <div className="space-y-3">
                       <label className="text-sm font-medium text-muted-foreground">
-                        Support
+                        {t("support")}
                       </label>
                       <a
                         href="https://smryai.userjot.com/"
@@ -563,7 +566,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
                         onClick={() => setSettingsOpen(false)}
                       >
                         <BugIcon className="size-4" />
-                        Report Bug / Feedback
+                        {t("reportBugFeedback")}
                       </a>
                     </div>
                   </div>

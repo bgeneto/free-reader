@@ -194,11 +194,38 @@
     "includeSources": "包含来源",
     "all": "全部",
     "none": "无",
-    "sources": "来源"
+    "sources": "来源",
+    "copied": "已复制"
   },
   "bookmarklet": {
     "linkText": "{siteName}书签工具",
     "dragTip": "拖到书签栏"
+  },
+  "summary": {
+    "summary": "摘要",
+    "generateSummary": "生成摘要",
+    "dailySummaries": "每日摘要",
+    "executiveSummary": "执行摘要",
+    "autoSelectedBestSource": "自动选择最佳来源（{count}字符）",
+    "generating": "生成中...",
+    "streaming": "传输中...",
+    "update": "更新",
+    "generate": "生成",
+    "best": "最佳"
+  },
+  "proxy": {
+    "reader": "阅读器",
+    "original": "原始",
+    "iframe": "框架",
+    "settings": "设置",
+    "customizeView": "自定义视图和外观",
+    "viewMode": "视图模式",
+    "appearance": "外观",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "系统",
+    "support": "支持",
+    "reportBugFeedback": "报告错误 / 反馈"
   },
   "common": {
     "premium": "高级版",
