@@ -29,7 +29,7 @@ interface AudioChunk {
 
 // Stop tokens for intelligent text splitting (in priority order)
 const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ': ', ', '];
-const MIN_CHUNK_SIZE = 150;
+const MIN_CHUNK_SIZE = 125;
 const MAX_CHUNK_SIZE = 400;
 const FIRST_CHUNK_MAX = 250;
 
