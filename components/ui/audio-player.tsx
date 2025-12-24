@@ -28,7 +28,7 @@ interface AudioChunk {
 }
 
 // Stop tokens for intelligent text splitting (in priority order)
-const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ', '];
+const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ': ', ', '];
 const MIN_CHUNK_SIZE = 150;
 const MAX_CHUNK_SIZE = 400;
 const FIRST_CHUNK_MULTIPLIER = 1.4;
@@ -94,6 +94,7 @@ export function AudioPlayer({
     const [chunks, setChunks] = useState<AudioChunk[]>([]);
     const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
     const [loadedDuration, setLoadedDuration] = useState(0);
+    const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const isPlayingRef = useRef(false);
@@ -319,6 +320,7 @@ export function AudioPlayer({
 
         audioRef.current = audio;
         audio.volume = isMuted ? 0 : volume;
+        audio.playbackRate = playbackSpeed;
         audio.currentTime = startPosition;
 
         // Capture values for callbacks
@@ -359,7 +361,7 @@ export function AudioPlayer({
             setPlayerState("error");
             setErrorMessage(error instanceof Error ? error.message : "Failed to play audio");
         }
-    }, [isMuted, volume, loadChunk]);
+    }, [isMuted, volume, playbackSpeed, loadChunk]);
 
     // Handle play button click - always use playChunk to ensure listeners are set up
     const handlePlay = useCallback(async () => {
@@ -458,6 +460,18 @@ export function AudioPlayer({
         }
         setIsMuted(!isMuted);
     }, [isMuted, volume]);
+
+    // Cycle playback speed: 1 -> 1.5 -> 2 -> 1
+    const cycleSpeed = useCallback(() => {
+        const speeds = [1, 1.5, 2];
+        const currentIndex = speeds.indexOf(playbackSpeed);
+        const nextIndex = (currentIndex + 1) % speeds.length;
+        const newSpeed = speeds[nextIndex];
+        setPlaybackSpeed(newSpeed);
+        if (audioRef.current) {
+            audioRef.current.playbackRate = newSpeed;
+        }
+    }, [playbackSpeed]);
 
     // Retry on error
     const handleRetry = useCallback(() => {
@@ -564,6 +578,17 @@ export function AudioPlayer({
                 ) : (
                     <Volume2 className="size-4" />
                 )}
+            </Button>
+
+            {/* Playback Speed Button */}
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={cycleSpeed}
+                className="shrink-0 text-xs font-medium tabular-nums min-w-[32px]"
+                aria-label={`Playback speed: ${playbackSpeed}x`}
+            >
+                {playbackSpeed}x
             </Button>
 
             {playerState === "error" && (
