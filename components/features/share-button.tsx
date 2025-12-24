@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   Share2 as ShareIcon,
   Link as LinkIcon,
@@ -64,6 +65,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
   sidebarOpen = true,
   onActionComplete
 }) => {
+  const t = useTranslations("share");
   const [copied, setCopied] = useState(false);
   const [hasNativeShare, setHasNativeShare] = useState(false);
 
@@ -99,7 +101,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
       try {
         await navigator.share({
           title: articleTitle,
-          text: `Check out this article on ${siteName}`,
+          text: t("checkOut", { siteName }),
           url: finalUrl,
         });
         if (onActionComplete) onActionComplete();
@@ -155,7 +157,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
           </h3>
           {!articleImage && (
             <div className="text-muted-foreground text-sm">
-              Read the full article on {siteName}
+              {t("readFullArticle", { siteName })}
             </div>
           )}
         </div>
@@ -174,7 +176,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
           <div className="size-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-accent group-hover:scale-110 transition-all duration-200">
             {copied ? <CheckIcon className="size-5 text-green-600" /> : <LinkIcon className="size-5" />}
           </div>
-          <span className="text-xs font-medium text-center w-full truncate">{copied ? "Copied" : "Copy"}</span>
+          <span className="text-xs font-medium text-center w-full truncate">{copied ? t("copied") : t("copy")}</span>
         </button>
 
         {hasNativeShare && (
@@ -185,7 +187,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
             <div className="size-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-accent group-hover:scale-110 transition-all duration-200">
               <ShareIcon className="size-5" />
             </div>
-            <span className="text-xs font-medium text-center w-full truncate">More</span>
+            <span className="text-xs font-medium text-center w-full truncate">{t("more")}</span>
           </button>
         )}
 
@@ -214,6 +216,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   triggerClassName,
   ...shareProps
 }) => {
+  const t = useTranslations("share");
   const [open, setOpen] = useState(false);
 
   const trigger = (
@@ -234,9 +237,9 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         )}
       />
       {triggerVariant === "icon" ? (
-        <span className="sr-only">Share</span>
+        <span className="sr-only">{t("share")}</span>
       ) : (
-        "Share"
+        t("share")
       )}
     </Button>
   );
@@ -246,10 +249,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       <div className="flex h-full flex-col bg-card">
         <div className="border-b border-border px-6 py-4">
           <h2 className="text-base font-semibold text-foreground">
-            {shareProps.articleTitle || "Share article"}
+            {shareProps.articleTitle || t("shareArticle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Share this summary with others
+            {t("shareDescription")}
           </p>
         </div>
         <div className="flex-1 overflow-y-auto p-6">

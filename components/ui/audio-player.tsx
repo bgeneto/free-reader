@@ -31,7 +31,7 @@ interface AudioChunk {
 const STOP_TOKENS = ['\n\n', '\n', '. ', '! ', '? ', '; ', ': ', ', '];
 const MIN_CHUNK_SIZE = 150;
 const MAX_CHUNK_SIZE = 400;
-const FIRST_CHUNK_MULTIPLIER = 1.4;
+const FIRST_CHUNK_MAX = 250;
 
 /**
  * Split text into chunks intelligently by stop tokens
@@ -43,11 +43,9 @@ function splitTextIntoChunks(text: string): string[] {
 
     while (remaining.length > 0) {
         const maxSize = isFirstChunk
-            ? Math.floor(MAX_CHUNK_SIZE * FIRST_CHUNK_MULTIPLIER)
+            ? FIRST_CHUNK_MAX
             : MAX_CHUNK_SIZE;
-        const minSize = isFirstChunk
-            ? Math.floor(MIN_CHUNK_SIZE * FIRST_CHUNK_MULTIPLIER)
-            : MIN_CHUNK_SIZE;
+        const minSize = MIN_CHUNK_SIZE;
 
         if (remaining.length <= maxSize) {
             chunks.push(remaining);
