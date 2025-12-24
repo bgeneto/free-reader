@@ -149,6 +149,33 @@
   }
 }
 
+/* Fix contrast for muted text on highlighted/selected backgrounds */
+/* When menu/select items are highlighted, ensure all child text has proper contrast */
+[data-highlighted] .text-muted-foreground,
+[data-highlighted] [class*="text-muted-foreground"],
+[data-slot="menu-item"][data-highlighted] span,
+[data-slot="select-item"][data-highlighted] span,
+[data-slot="menu-checkbox-item"][data-highlighted] span,
+[data-slot="menu-radio-item"][data-highlighted] span,
+[data-slot="menu-sub-trigger"][data-highlighted] span {
+  color: var(--accent-foreground) !important;
+  opacity: 0.8;
+}
+
+/* Also handle icons inside highlighted items */
+[data-highlighted] svg {
+  color: var(--accent-foreground);
+  opacity: 0.8;
+}
+
+/* Handle nested divs with muted foreground text inside highlighted items */
+[data-highlighted] div>.text-xs.text-muted-foreground,
+[data-highlighted] .flex-col>span.text-muted-foreground,
+[data-highlighted] .flex>span.text-muted-foreground {
+  color: var(--accent-foreground) !important;
+  opacity: 0.8;
+}
+
 /* originui css below */
 
 @theme inline {
