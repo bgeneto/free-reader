@@ -669,7 +669,7 @@ export async function GET(request: NextRequest) {
     const smryUrl = buildSmryUrl(validatedUrl, validatedSource);
 
     // DEBUG: Log request details
-    logger.debug({
+    logger.info({
       action: '[CACHE_DEBUG]',
       step: 'request_received',
       details: {
@@ -697,7 +697,7 @@ export async function GET(request: NextRequest) {
     const urlWithSource = getUrlWithSource(validatedSource, validatedUrl);
     const cacheKey = `${validatedSource}:${validatedUrl}`;
 
-    logger.debug({
+    logger.info({
       action: '[CACHE_DEBUG]',
       step: 'key_generated',
       cacheKey,
@@ -706,7 +706,7 @@ export async function GET(request: NextRequest) {
 
     // Try to get from cache
     try {
-      logger.debug({
+      logger.info({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_start'
       }, 'Cache Debug: Attempting Redis GET');
@@ -714,7 +714,7 @@ export async function GET(request: NextRequest) {
       const rawCachedArticle = await redis.get(cacheKey);
       const cachedArticle = decompress(rawCachedArticle);
 
-      logger.debug({
+      logger.info({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_result',
         result: cachedArticle ? 'HIT' : 'MISS',
@@ -738,7 +738,7 @@ export async function GET(request: NextRequest) {
         } else {
           const article = cacheValidation.data;
 
-          if (article.length > 4000 && article.htmlContent) {
+          if (article.length > 500 && article.htmlContent) {
             logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'cache_hit_valid',
@@ -768,7 +768,7 @@ export async function GET(request: NextRequest) {
             });
 
             return NextResponse.json(response);
-          } else if (article.length > 4000 && !article.htmlContent) {
+          } else if (article.length > 500 && !article.htmlContent) {
             logger.warn({
               action: '[CACHE_DEBUG]',
               step: 'cache_skip_missing_html',
@@ -780,9 +780,9 @@ export async function GET(request: NextRequest) {
               action: '[CACHE_DEBUG]',
               step: 'cache_skip_short',
               length: article.length,
-              threshold: 4000,
+              threshold: 500,
               hasHtml: !!article.htmlContent
-            }, 'Cache hit SKIPPED: Article too short (< 4000 chars)');
+            }, 'Cache hit SKIPPED: Article too short (< 500 chars)');
           }
         }
       }
@@ -832,7 +832,7 @@ export async function GET(request: NextRequest) {
 
     // Save to cache
     try {
-      logger.debug({
+      logger.info({
         action: '[CACHE_DEBUG]',
         step: 'redis_set_attempt',
         length: article.length
