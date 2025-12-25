@@ -5,6 +5,7 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
 import { redis } from "@/lib/redis";
+import { extractArticleUrl } from "@/lib/validation/url";
 // CLERK DISABLED - auth import commented out
 // import { auth } from "@clerk/nextjs/server";
 
@@ -119,13 +120,24 @@ export async function POST(request: NextRequest) {
     const { prompt: content, title, url, ip, language, source } = validationResult.data;
     const clientIp = ip || request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown";
 
-    logger.debug({ clientIp, language, contentLength: content.length }, 'Request details');
+    // Normalize URL for consistent cache keys
+    // Use extractArticleUrl to strip app-specific params and normalize trailing slashes
+    // This ensures cache hits work regardless of how the URL was formatted
+    const normalizedUrl = url ? extractArticleUrl(url) : null;
+
+    logger.debug({ 
+      clientIp, 
+      language, 
+      source,
+      contentLength: content.length,
+      url: normalizedUrl 
+    }, 'Request details');
 
     // Check cache FIRST (before rate limiting)
     // This ensures cache hits don't count against user's rate limit
     // Cache key includes language AND source for proper differentiation
-    const cacheKey = url
-      ? `summary:${source}:${language}:${url}`
+    const cacheKey = normalizedUrl
+      ? `summary:${source}:${language}:${normalizedUrl}`
       : `summary:${source}:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
 
     // Try to get cached summary, but don't fail if Redis is down
