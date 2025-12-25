@@ -21,9 +21,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    after: true,
-  },
+
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
 }
 
