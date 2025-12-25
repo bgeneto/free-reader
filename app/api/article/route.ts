@@ -668,6 +668,18 @@ export async function GET(request: NextRequest) {
     // Construct the full smry.ai URL for debugging
     const smryUrl = buildSmryUrl(validatedUrl, validatedSource);
 
+    // DEBUG: Log request details
+    logger.debug({
+      action: '[CACHE_DEBUG]',
+      step: 'request_received',
+      details: {
+        rawUrl: url,
+        validatedUrl,
+        source: validatedSource,
+        smryUrl
+      }
+    }, 'Cache Debug: Article Request Received');
+
     // Jina.ai is handled by a separate endpoint (/api/jina) for client-side fetching
     if (validatedSource === "jina.ai") {
       logger.warn({ source: validatedSource, smryUrl }, 'Jina.ai source not supported in this endpoint');
@@ -685,10 +697,30 @@ export async function GET(request: NextRequest) {
     const urlWithSource = getUrlWithSource(validatedSource, validatedUrl);
     const cacheKey = `${validatedSource}:${validatedUrl}`;
 
+    logger.debug({
+      action: '[CACHE_DEBUG]',
+      step: 'key_generated',
+      cacheKey,
+      urlWithSource
+    }, 'Cache Debug: Key Generated');
+
     // Try to get from cache
     try {
+      logger.debug({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_get_start'
+      }, 'Cache Debug: Attempting Redis GET');
+
       const rawCachedArticle = await redis.get(cacheKey);
       const cachedArticle = decompress(rawCachedArticle);
+
+      logger.debug({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_get_result',
+        result: cachedArticle ? 'HIT' : 'MISS',
+        length: cachedArticle?.length,
+        hasHtml: !!cachedArticle?.htmlContent
+      }, 'Cache Debug: Redis GET Result');
 
       if (cachedArticle) {
         // Validate cached data
@@ -707,6 +739,12 @@ export async function GET(request: NextRequest) {
           const article = cacheValidation.data;
 
           if (article.length > 4000 && article.htmlContent) {
+            logger.debug({
+              action: '[CACHE_DEBUG]',
+              step: 'cache_hit_valid',
+              length: article.length
+            }, 'Cache hit - returning cached article');
+
             logger.debug({ source: validatedSource, hostname: new URL(validatedUrl).hostname, length: article.length }, 'Cache hit');
 
             // Validate final response structure
@@ -731,7 +769,20 @@ export async function GET(request: NextRequest) {
 
             return NextResponse.json(response);
           } else if (article.length > 4000 && !article.htmlContent) {
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'cache_skip_missing_html',
+              length: article.length
+            }, 'Cache hit SKIPPED: Missing HTML content');
             logger.info({ source: validatedSource, hostname: new URL(validatedUrl).hostname }, 'Cache hit but missing HTML content - fetching fresh');
+          } else {
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'cache_skip_short',
+              length: article.length,
+              threshold: 4000,
+              hasHtml: !!article.htmlContent
+            }, 'Cache hit SKIPPED: Article too short (< 4000 chars)');
           }
         }
       }
@@ -781,6 +832,12 @@ export async function GET(request: NextRequest) {
 
     // Save to cache
     try {
+      logger.debug({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_set_attempt',
+        length: article.length
+      }, 'Cache Debug: Attempting to save to cache');
+
       const savedArticle = await saveOrReturnLongerArticle(cacheKey, article);
 
       // Validate saved article
