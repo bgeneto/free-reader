@@ -14,7 +14,7 @@ export const siteConfig: SiteConfig = {
   description:
     "Paste any paywalled article link and get the full text plus an AI summary. Free to use, no account, no browser extension.",
   url: process.env.NEXT_PUBLIC_URL || "https://smry.ai",
-  ogImage: `${process.env.NEXT_PUBLIC_URL || "https://smry.ai"}/og-image.png`,
+  ogImage: `${process.env.NEXT_PUBLIC_URL || "https://smry.ai"}/api/og`,
   links: {
     twitter: "https://twitter.com/michael_chomsky",
     github: "https://github.com/bgeneto/free-reader",

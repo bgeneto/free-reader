@@ -35,7 +35,7 @@ const sourceSans = Source_Sans_3({
 
 
 export const metadata: Metadata = {
-  title: `Bypass Paywalls & Read Full Articles Free – No Login | ${siteConfig.name}`,
+  title: `Bypass Paywalls & Read Full Articles Free - No Login | ${siteConfig.name}`,
   description:
     siteConfig.description,
   keywords: ["bypass paywall", "paywall remover", "read paywalled articles", "free paywall bypass", "article summarizer", "remove paywall"],
