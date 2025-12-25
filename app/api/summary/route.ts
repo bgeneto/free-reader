@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from "ai";
@@ -126,12 +126,12 @@ export async function POST(request: NextRequest) {
     // Returns null if no URL provided (content-based caching fallback)
     const normalizedUrl = url ? extractArticleUrl(url) : null;
 
-    logger.debug({ 
-      clientIp, 
-      language, 
+    logger.debug({
+      clientIp,
+      language,
       source,
       contentLength: content.length,
-      url: normalizedUrl 
+      url: normalizedUrl
     }, 'Request details');
 
     // Check cache FIRST (before rate limiting)
@@ -253,22 +253,25 @@ export async function POST(request: NextRequest) {
       ],
       onFinish: async ({ text, usage }) => {
         // Cache the complete summary after streaming finishes
-        logger.info({
-          length: text.length,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          totalTokens: usage.totalTokens
-        }, 'Summary generated with OpenRouter');
+        // Use 'after' to ensure this background task completes even if the response is closed
+        after(async () => {
+          logger.info({
+            length: text.length,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens
+          }, 'Summary generated with OpenRouter');
 
-        // Try to cache, but don't fail if Redis is down
-        try {
-          // Cache for 30 days (2592000 seconds)
-          await redis.set(cacheKey, text, { ex: 2592000 });
-          logger.debug('Summary cached successfully');
-        } catch (redisError) {
-          // Log the error but don't break the streaming response
-          logger.warn({ error: redisError }, 'Failed to cache summary in Redis');
-        }
+          // Try to cache, but don't fail if Redis is down
+          try {
+            // Cache for 30 days (2592000 seconds)
+            await redis.set(cacheKey, text, { ex: 2592000 });
+            logger.debug('Summary cached successfully');
+          } catch (redisError) {
+            // Log the error but don't break the streaming response
+            logger.warn({ error: redisError }, 'Failed to cache summary in Redis');
+          }
+        });
       },
     });
 
