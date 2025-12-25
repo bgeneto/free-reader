@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     const normalizedUrl = url ? extractArticleUrl(url) : null;
 
     // DEBUG: Log request details using logger to ensure it appears in docker logs
-    logger.warn({
+    logger.debug({
       action: '[CACHE_DEBUG]',
       step: 'request_received',
       details: { url, normalizedUrl, language, source }
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       ? `summary:${source}:${language}:${normalizedUrl}`
       : `summary:${source}:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
 
-    logger.warn({
+    logger.debug({
       action: '[CACHE_DEBUG]',
       step: 'key_generated',
       cacheKey
@@ -157,14 +157,14 @@ export async function POST(request: NextRequest) {
     // Try to get cached summary, but don't fail if Redis is down
     let cached: string | null = null;
     try {
-      logger.warn({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_start'
       }, 'Cache Debug: Attempting Redis GET');
 
       cached = await redis.get<string>(cacheKey);
 
-      logger.warn({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_result',
         result: cached ? 'HIT' : 'MISS',
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (redisError) {
-      logger.warn({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_error',
         error: redisError
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         const envLimit = process.env.SUMMARY_DAILY_LIMIT;
 
         // DEBUG: Enviroment variable check
-        logger.warn({
+        logger.debug({
           action: '[ENV_DEBUG]',
           raw: envLimit,
           parsed: parseInt(envLimit || '20', 10)
@@ -275,13 +275,13 @@ export async function POST(request: NextRequest) {
     // Primary model: openai/gpt-oss-20b:free (20B parameters)
     // - Free tier with rate limits (100-200 requests/day depending on account credits)
     // - OpenRouter automatically handles provider failover for high uptime
-    // 
+    //
     // To add model-level fallback, you can:
     // 1. Use OpenRouter's native 'models' array parameter (requires custom fetch)
     // 2. Implement try-catch with fallback models (see OPENROUTER_MIGRATION.md)
     // 3. Use different models for different use cases
     //
-    // Alternative free models: 
+    // Alternative free models:
     // - meta-llama/llama-3.2-3b-instruct:free (faster, smaller)
     // - google/gemma-2-9b-it:free (better instruction following)
     // - qwen/qwen-2.5-7b-instruct:free (strong reasoning)
@@ -297,14 +297,14 @@ export async function POST(request: NextRequest) {
       // Manually accumulate text because onFinish seems to receive empty text in some configurations
       onChunk: async ({ chunk }) => {
         if (chunk.type === 'text-delta') {
-          fullText += chunk.textDelta;
+          fullText += chunk.text;
         }
       },
       onFinish: async ({ text, usage }) => {
         // Fallback to manual accumulation if text is empty
         const validationText = text && text.length > 0 ? text : fullText;
 
-        logger.warn({
+        logger.debug({
           action: '[CACHE_DEBUG]',
           step: 'onFinish',
           providedTextLength: text?.length || 0,
@@ -314,13 +314,13 @@ export async function POST(request: NextRequest) {
         // Cache the complete summary after streaming finishes
         // Use 'after' to ensure this background task completes even if the response is closed
         after(async () => {
-          logger.warn({
+          logger.debug({
             action: '[CACHE_DEBUG]',
             step: 'after_callback'
           }, 'Cache Debug: Inside after()');
 
           if (!validationText || validationText.length === 0) {
-            logger.warn({
+            logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'abort_cache_empty',
               reason: 'Text is empty'
@@ -337,14 +337,14 @@ export async function POST(request: NextRequest) {
 
           // Try to cache, but don't fail if Redis is down
           try {
-            logger.warn({
+            logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'redis_set_start',
               cacheKey
             }, 'Cache Debug: Attempting Redis SET');
             // Cache for 30 days (2592000 seconds)
             await redis.set(cacheKey, validationText, { ex: 2592000 });
-            logger.warn({
+            logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'redis_set_success',
               cacheKey,
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
             }, 'Cache Debug: Redis SET Success');
             logger.debug('Summary cached successfully');
           } catch (redisError) {
-            logger.warn({
+            logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'redis_set_error',
               error: redisError
