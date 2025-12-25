@@ -669,7 +669,7 @@ export async function GET(request: NextRequest) {
     const smryUrl = buildSmryUrl(validatedUrl, validatedSource);
 
     // DEBUG: Log request details
-    logger.info({
+    logger.debug({
       action: '[CACHE_DEBUG]',
       step: 'request_received',
       details: {
@@ -697,7 +697,7 @@ export async function GET(request: NextRequest) {
     const urlWithSource = getUrlWithSource(validatedSource, validatedUrl);
     const cacheKey = `${validatedSource}:${validatedUrl}`;
 
-    logger.info({
+    logger.debug({
       action: '[CACHE_DEBUG]',
       step: 'key_generated',
       cacheKey,
@@ -706,7 +706,7 @@ export async function GET(request: NextRequest) {
 
     // Try to get from cache
     try {
-      logger.info({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_start'
       }, 'Cache Debug: Attempting Redis GET');
@@ -714,7 +714,7 @@ export async function GET(request: NextRequest) {
       const rawCachedArticle = await redis.get(cacheKey);
       const cachedArticle = decompress(rawCachedArticle);
 
-      logger.info({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_get_result',
         result: cachedArticle ? 'HIT' : 'MISS',
@@ -832,7 +832,7 @@ export async function GET(request: NextRequest) {
 
     // Save to cache
     try {
-      logger.info({
+      logger.debug({
         action: '[CACHE_DEBUG]',
         step: 'redis_set_attempt',
         length: article.length
