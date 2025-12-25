@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
     // Normalize URL for consistent cache keys
     // Use extractArticleUrl to strip app-specific params and normalize trailing slashes
     // This ensures cache hits work regardless of how the URL was formatted
+    // Returns null if no URL provided (content-based caching fallback)
     const normalizedUrl = url ? extractArticleUrl(url) : null;
 
     logger.debug({ 
