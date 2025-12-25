@@ -2,60 +2,71 @@
 
 > **Reclaim your reading experience.**
 
-FreeReader is a self-hostable web tool designed to declutter the modern web. By stripping away intrusive JavaScript, blocking trackers, and bypassing CSS overlays, FreeReader extracts the core content of any article and presents it in a distraction-free, minimalist interface.
+FreeReader is a self-hostable web tool designed to declutter the modern web. By stripping away intrusive JavaScript, blocking trackers, and bypassing CSS overlays, FreeReader extracts the core content of any article and presents it in a distraction-free component, featuring a premium newspaper-style interface.
 
-Powered by Nextjs and enhanced with lightweight AI for content extraction, it ensures that knowledge remains accessible and readable.
+Powered by **Next.js 16**, **Redis**, and **AI**, it goes beyond simple parsing to offer executive summaries, audio narration, and anti-bot bypass capabilities.
 
 ---
 
 ## ✨ Key Features
 
-- **Intelligent Extraction** — Uses heuristic analysis and AI-assisted DOM parsing to identify the main article text, ignoring sidebars, ads, and "subscribe" modals.
+### 🧠 AI-Powered Insights
+- **Executive Summaries** — Instantly generate concise summaries of long-form content using local or cloud LLMs.
+- **Multilingual Support** — Summaries are automatically localized into 14+ languages (English, Portuguese, Spanish, German, French, etc.).
+- **Smart Caching** — Generated summaries are cached in Redis to prevent redundant API calls and save costs.
 
-- **Cache Fallback** — Automatically attempts to retrieve content from public archives (Wayback Machine, Google Cache) if the live source is inaccessible.
+### 🗣️ Audio Narration (TTS)
+- **Listen to Articles** — Convert any article into high-quality audio using OpenAI's HD Text-to-Speech models.
+- **Seamless Playback** — Integrated audio player with speed controls and background play support.
 
-- **Self-Host Ready** — Fully containerized with Docker and Docker Compose for easy deployment on your own server.
+### 🛡️ Advanced Extraction & Anti-Bot
+- **Multi-Source Pipeline** — Fetches content via **Diffbot**, **Jina.ai**, **Wayback Machine**, and **Google Cache** in parallel.
+- **Bot Bypass** — Uses headless browser emulation (Puppeteer) with rotating user agents to bypass strict paywalls and bot detection systems (e.g., Reuters, Bloomberg).
+- **Archive Fallback** — Automatically retrieves archived versions if the live URL is dead or blocked.
 
-- **Privacy First** — Acts as a proxy between you and the source—your IP remains private, and no trackers follow you.
+### 📰 Premium Reading Experience
+- **Newspaper UI** — A beautiful, typography-centric interface inspired by classic print media.
+- **Distraction-Free** — Removes ads, popups, cookie banners, and "Subscribe to Read" overlays.
+- **Dark Mode** — Fully responsive design with optimized contrast for night reading.
 
-- **LLM Summarization (Optional)** — Connects with local LLMs or external APIs to provide one-click summaries of long-form content.
+### 🛠️ Developer Friendly
+- **Markdown Export** — Copy content as clean Markdown, optimized for feeding into LLMs (ChatGPT, Claude, etc.).
+- **Self-Host Ready** — Dockerized setup for easy deployment on any VPS or home lab.
+- **Privacy Focused** — proxies requests to protect your IP address from trackers.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer       | Technology                                                  |
-|-------------|-------------------------------------------------------------|
-| Frontend    | Next.js 16 (App Router), React Server Components, TanStack  |
-| Styling     | Tailwind CSS, Radix UI                                      |
-| Backend     | Node.js API Routes, Zod validation                          |
-| AI/LLM      | OpenRouter (300+ models), OpenAI-compatible APIs            |
-| Extraction  | Diffbot API, Mozilla Readability, Jina.ai Reader            |
-| Caching     | Upstash Redis                                               |
-| Logging     | Pino (structured JSON logs)                                 |
-| Deployment  | Docker, Docker Compose                                      |
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS 4, Radix UI |
+| **Backend** | Node.js API Routes, Server Components |
+| **AI / LLM** | Vercel AI SDK, OpenRouter, OpenAI |
+| **Extraction** | Diffbot, Jina.ai, Puppeteer (Browserless), Cheerio |
+| **Caching** | Upstash Redis, Redis (Docker) |
+| **Auth & Payments** | Clerk (Auth), Stripe (Subscriptions) |
+| **Logging** | Pino (Structured Logs) |
+| **Deployment** | Docker Compose |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Option 1: Prepend the URL
-Simply prepend `https://your-domain.com/` before any article URL:
+Simply prepend your instance URL before any article link:
 ```
-https://your-domain.com/https://www.example.com/article
+https://your-domain.com/https://www.nytimes.com/2024/01/01/world/article.html
 ```
 
-### Option 2: Paste on Homepage
-Visit your FreeReader instance and paste any article URL into the input field.
-
-### Option 3: Bookmarklet
+### Option 2: Bookmarklet
 Drag this to your bookmarks bar for one-click access:
 ```javascript
 javascript:(function(){window.location='https://your-domain.com/'+window.location.href})()
 ```
 
-### Option 4: API Proxy Route
-For integrations and deep linking:
+### Option 3: API Proxy
+Use the proxy endpoint for integrations:
 ```
 https://your-domain.com/proxy?url=https://example.com/article
 ```
@@ -66,157 +77,100 @@ https://your-domain.com/proxy?url=https://example.com/article
 
 ### Prerequisites
 - Docker & Docker Compose
-- API keys (see Environment Variables below)
+- API Keys (OpenAI, OpenRouter, Upstash/Redis, etc.)
 
-### Using Docker Compose
+### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/bgeneto/free-reader.git freereader
-cd freereader
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/bgeneto/free-reader.git
+   cd free-reader
+   ```
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your API keys
+2. **Configure Environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your keys
+   ```
 
-# Run with Docker Compose
-docker compose up -d
-```
+3. **Run with Docker:**
+   ```bash
+   docker-compose up -d --build
+   ```
 
-### Manual Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Configure environment
-cp .env.example .env.local
-
-# Development
-pnpm dev
-
-# Production build
-pnpm build && pnpm start
-```
+Your instance will be available at `http://localhost:3000`.
 
 ---
 
 ## ⚙️ Environment Variables
 
-### Required
-```bash
-# OpenRouter API (for AI summaries)
-# Get your key: https://openrouter.ai/settings/keys
-OPENROUTER_API_KEY=
+Copy `.env.example` to `.env` and fill in the values:
 
-# Upstash Redis (for caching)
-# Get credentials: https://console.upstash.com
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
+### Core Configuration
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_URL` | The public URL of your instance (e.g., `https://reader.example.com`) |
+| `NEXT_PUBLIC_SITE_NAME` | Name of your site (default: FreeReader) |
+| `LOG_LEVEL` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
 
-# Site configuration
-NEXT_PUBLIC_URL=https://your-domain.com
-```
+### AI & Summarization
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | Key for OpenAI (or compatible) API |
+| `OPENAI_BASE_URL` | Base URL for AI provider (default: `https://openrouter.ai/api/v1`) |
+| `SUMMARIZATION_MODEL` | specific model ID (e.g., `openai/gpt-4o-mini`, `meta-llama/llama-3.2-3b-instruct:free`) |
+| `SUMMARY_DAILY_LIMIT` | Max summaries per IP per day (default: 30) |
 
-### Optional
-```bash
-# Diffbot (enhanced article extraction)
-DIFFBOT_API_KEY=
+### Text-to-Speech (TTS)
+| Variable | Description |
+|----------|-------------|
+| `TTS_MODEL` | OpenAI TTS model (default: `tts-1-hd`) |
+| `TTS_VOICE` | Voice ID (default: `alloy`) |
 
-# Logo.dev (company logos in UI)
-NEXT_PUBLIC_LOGODEV_TOKEN=
+### Extraction Services
+| Variable | Description |
+|----------|-------------|
+| `DIFFBOT_API_KEY` | (Optional) Token for high-fidelity extraction |
+| `JINA_API_KEY` | (Optional) Token for Jina.ai Reader API |
 
-# Custom LLM endpoint (OpenAI-compatible)
-OPENAI_BASE_URL=
-OPENAI_API_KEY=
-SUMMARIZATION_MODEL=
-```
+### Caching (Redis)
+| Variable | Description |
+|----------|-------------|
+| `UPSTASH_REDIS_REST_URL` | Redis URL (or Upstash endpoint) |
+| `UPSTASH_REDIS_REST_TOKEN` | Redis Token |
+| `DISABLE_RATE_LIMIT` | Set `true` to disable rate limiting (dev mode) |
 
 ---
 
 ## 🔧 How It Works
 
-### Multi-Source Extraction
-FreeReader fetches content from multiple sources in parallel, returning the first successful response:
+### Smart Extraction Pipeline
+1. **Request:** User requests an article.
+2. **Parallel Fetching:** The system simultaneously queries:
+   - **Direct Fetch:** Using browser emulation to look like a real user.
+   - **Archives:** Wayback Machine & Google Cache.
+   - **Extractors:** Jina.ai and Diffbot (if configured).
+3. **Selection:** The "heaviest" (most content-rich) successful response is selected.
+4. **Sanitization:** Ads, tracking scripts, and paywall modals are stripped aggressively.
+5. **Caching:** The clean content is cached in Redis to speed up future requests.
 
-```
-User enters URL
-    ↓
-Parallel requests to 3 sources:
-├── Direct → Diffbot AI extraction
-├── Wayback Machine → Archived content
-└── Jina.ai → Pre-parsed markdown
-    ↓
-First successful response displayed
-```
-
-### Content Processing Pipeline
-1. **Source Routing** — Routes to optimal extractor based on source type
-2. **Multi-Layer Fallback** — Tries Diffbot → Readability → Multiple fields → Re-extraction
-3. **Smart Caching** — Keeps longest content version, keyed by `source:url`
-4. **Clean Rendering** — Strips overlays, ads, and archive UI artifacts
-
-### AI Summarization
-```
-User clicks "Generate Summary"
-    ↓
-Check cache by language:url key
-    ↓
-If miss → LLM with language-specific prompt
-    ↓
-Cache and return summary
-```
-
-**Supported Languages:** English, Spanish, French, German, Chinese, Japanese, Portuguese, Russian, Hindi, Italian, Korean, Arabic, Dutch, Turkish
-
-**Rate Limits:** 20 summaries/IP/day, 6 per minute
-
----
-
-## 📁 Project Structure
-
-```
-├── app/
-│   ├── api/
-│   │   ├── article/         # Multi-source article fetching
-│   │   └── summary/         # AI summarization endpoint
-│   ├── proxy/               # Reader view
-│   └── page.tsx             # Landing page
-├── lib/
-│   ├── api/                 # Diffbot, Jina.ai clients
-│   ├── errors/              # Type-safe error handling
-│   └── hooks/               # React Query hooks
-├── components/              # UI components
-├── docker-compose.yaml      # Container orchestration
-└── Dockerfile               # Production build
-```
+### Bot Detection Bypass
+FreeReader employs a sophisticated fetching strategy to avoid 403/429 errors:
+- **User-Agent Rotation:** Mimics various browsers and devices.
+- **Headers Impersonation:** Sends realistic `Accept-Language`, `Referer`, and `Sec-CH-UA` headers.
+- **Browser Automation:** Uses Puppeteer for sites that require JavaScript execution (React/SPA sites).
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here are some areas where help is appreciated:
+Contributions are welcome! Please check the [Issues](https://github.com/bgeneto/free-reader/issues) tab.
 
-### Feature Requests
-- Additional archive sources (Archive.is, Google Cache)
-- Browser extension
-- PDF export
-- Text-to-speech integration
-
-### Technical Improvements
-- Streaming AI responses
-- Video/podcast content support
-- OCR for image-based content
-- E2E test coverage
-
-### How to Contribute
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-For major changes, please open an issue first to discuss the approach.
+### Roadmap
+- [ ] Browser Extension (Chrome/Firefox)
+- [ ] PDF / eBook (ePub) Export
+- [ ] RSS Feed Generation
+- [ ] User Accounts (Save for later)
 
 ---
 
@@ -226,21 +180,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🔗 Related Projects
-
-- [Jina.ai Reader](https://jina.ai/reader) — Clean article extraction
-- [Diffbot](https://diffbot.com) — AI-powered web scraping
-- [Archive.org Wayback Machine](https://archive.org) — Web archive
-
----
-
-## 📬 Support
-
-- **Issues & Feature Requests:** [GitHub Issues](https://github.com/bgeneto/free-reader/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/bgeneto/free-reader/discussions)
-
----
-
 <p align="center">
-  <sub>Built with ❤️ using Next.js, TanStack Query, and OpenRouter</sub>
+  <sub>Built with ❤️ using Next.js & Open Source AI</sub>
 </p>

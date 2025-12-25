@@ -235,7 +235,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
       return {
         title: "Rate Limit Reached",
         message: isDaily
-          ? "You've hit your daily limit of 20 summaries. Upgrade to Premium for unlimited access."
+          ? `You've hit your daily limit of ${DAILY_LIMIT} summaries. Upgrade to Premium for unlimited access.`
           : "You've hit your limit of 6 summaries per minute. Wait a moment or upgrade to Premium.",
         bgClass: "bg-accent/10",
         textClass: "text-accent dark:text-accent",
