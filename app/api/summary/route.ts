@@ -249,7 +249,8 @@ export async function POST(request: NextRequest) {
 
         // Try to cache, but don't fail if Redis is down
         try {
-          await redis.set(cacheKey, text);
+          // Cache for 30 days (2592000 seconds)
+          await redis.set(cacheKey, text, { ex: 2592000 });
           logger.debug('Summary cached successfully');
         } catch (redisError) {
           // Log the error but don't break the streaming response
