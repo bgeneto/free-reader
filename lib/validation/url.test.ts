@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeUrl, isValidUrl } from "./url";
+import { normalizeUrl, isValidUrl, extractArticleUrl } from "./url";
 
 describe("normalizeUrl", () => {
   it("normalizes full https URL", () => {
@@ -55,3 +55,44 @@ describe("isValidUrl", () => {
   });
 });
 
+describe("extractArticleUrl", () => {
+  it("removes app-specific query params (source, view, sidebar)", () => {
+    const url = "https://example.com/article?source=smry-fast&view=markdown&sidebar=true";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article");
+  });
+
+  it("preserves article-specific query params while removing app params", () => {
+    const url = "https://example.com/article?id=123&source=smry-fast&view=markdown";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article?id=123");
+  });
+
+  it("handles URLs without query params", () => {
+    const url = "https://example.com/article";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article");
+  });
+
+  it("handles URLs with only article-specific params", () => {
+    const url = "https://example.com/article?page=2&search=test";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article?page=2&search=test");
+  });
+
+  it("normalizes URL while extracting", () => {
+    const url = "example.com/article?source=smry-fast";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article");
+  });
+
+  it("strips trailing slashes from URL path", () => {
+    const url = "https://example.com/article/";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article");
+  });
+
+  it("handles trailing slash with query params", () => {
+    const url = "https://example.com/article/?id=123&source=smry-fast";
+    expect(extractArticleUrl(url)).toBe("https://example.com/article?id=123");
+  });
+
+  it("preserves root path", () => {
+    const url = "https://example.com/";
+    expect(extractArticleUrl(url)).toBe("https://example.com/");
+  });
+});

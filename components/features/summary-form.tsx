@@ -5,6 +5,7 @@ import { useCompletion } from "@ai-sdk/react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { LANGUAGES, Source, ArticleResponse } from "@/types/api";
+import { extractArticleUrl } from "@/lib/validation/url";
 import { Button } from "../ui/button";
 import {
   Select,
@@ -102,7 +103,9 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
     streamProtocol: 'text', // Use plain text streaming
     body: {
       title: selectedArticle?.article?.title,
-      url: urlProp,
+      // Use extractArticleUrl to ensure cache key consistency
+      // This strips app-specific params (source, view, sidebar) from the URL
+      url: extractArticleUrl(urlProp),
       ip: ipProp,
       language: preferredLanguage,
       source: selectedSource, // Include source for cache key differentiation

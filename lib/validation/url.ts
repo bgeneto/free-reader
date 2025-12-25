@@ -79,6 +79,45 @@ export function isValidUrl(input: string): boolean {
 }
 
 /**
+ * App-specific query params that should NOT be part of cache keys.
+ * These are UI state params added by the app, not part of the original article URL.
+ */
+const APP_QUERY_PARAMS = ['source', 'view', 'sidebar'];
+
+/**
+ * Extract the clean article URL by stripping app-specific query parameters
+ * and normalizing trailing slashes.
+ * This ensures consistent cache keys regardless of how the user accessed the page.
+ * 
+ * Example:
+ *  Input:  "https://example.com/article?source=smry-fast&view=markdown&sidebar=true"
+ *  Output: "https://example.com/article"
+ * 
+ *  Input:  "https://example.com/article/?id=123&source=smry-fast"
+ *  Output: "https://example.com/article?id=123"
+ */
+export function extractArticleUrl(inputUrl: string): string {
+  try {
+    const normalized = normalizeUrl(inputUrl);
+    const url = new URL(normalized);
+
+    // Remove app-specific parameters
+    APP_QUERY_PARAMS.forEach(param => url.searchParams.delete(param));
+
+    // Normalize trailing slashes in pathname (except for root path "/")
+    // This ensures "example.com/path/" and "example.com/path" produce the same cache key
+    if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+      url.pathname = url.pathname.slice(0, -1);
+    }
+
+    return url.toString();
+  } catch {
+    // If parsing fails, return the normalized URL as-is
+    return normalizeUrl(inputUrl);
+  }
+}
+
+/**
  * Zod schema that normalizes and validates URLs consistently on both
  * the client and server.
  */

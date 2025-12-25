@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { ProxyContent } from "@/components/features/proxy-content";
 import type { Metadata } from "next";
 import { redis } from "@/lib/redis";
-import { normalizeUrl } from "@/lib/validation/url";
+import { normalizeUrl, extractArticleUrl } from "@/lib/validation/url";
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "SMRY";
 const siteUrl = process.env.NEXT_PUBLIC_URL || "https://smry.ai";
@@ -301,7 +301,9 @@ export default async function Page({
 
   let normalizedUrl: string;
   try {
-    normalizedUrl = normalizeUrl(candidateUrl);
+    // Use extractArticleUrl to strip app-specific query params (source, view, sidebar)
+    // This ensures cache keys are consistent regardless of how the user accessed the page
+    normalizedUrl = extractArticleUrl(candidateUrl);
   } catch (error) {
     console.error(
       "URL parameter is invalid",

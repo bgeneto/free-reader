@@ -31,6 +31,17 @@ const translations: Record<string, { title: string; tagline: string }> = {
     },
 };
 
+// Color palette from globals.css - Newspaper Light Theme
+const colors = {
+    background: '#F5EFE6',      // aged parchment
+    foreground: '#2C2825',      // warm charcoal
+    primary: '#1A1815',         // deep warm black (header)
+    primaryForeground: '#FAF8F5',
+    accent: '#8B4513',          // saddle brown
+    muted: '#6B665E',           // warm gray
+    border: '#D9CFC0',          // parchment border
+};
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const locale = searchParams.get('locale') || 'en';
@@ -49,30 +60,30 @@ export async function GET(request: NextRequest) {
                     width: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    backgroundColor: '#faf9f6',
+                    backgroundColor: colors.background,
                     fontFamily: 'Georgia, serif',
                 }}
             >
-                {/* Header bar */}
+                {/* Header bar - deep warm black */}
                 <div
                     style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        backgroundColor: '#1a3a2a',
+                        backgroundColor: colors.primary,
                         padding: '20px 50px',
-                        color: '#d4c5a9',
+                        color: colors.primaryForeground,
                     }}
                 >
                     <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '0.05em' }}>
                         {siteName}
                     </span>
-                    <span style={{ fontSize: 16, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 16, letterSpacing: '0.15em', textTransform: 'uppercase', opacity: 0.9 }}>
                         NO PAYWALLS • AI SUMMARIES • FREE FOREVER
                     </span>
                 </div>
 
-                {/* Main content area */}
+                {/* Main content area - parchment background */}
                 <div
                     style={{
                         display: 'flex',
@@ -87,7 +98,7 @@ export async function GET(request: NextRequest) {
                         style={{
                             fontSize: 72,
                             fontWeight: 400,
-                            color: '#1a1a1a',
+                            color: colors.foreground,
                             margin: 0,
                             lineHeight: 1.1,
                             maxWidth: '900px',
@@ -95,12 +106,13 @@ export async function GET(request: NextRequest) {
                     >
                         {t.title}
                     </h1>
+                    {/* Accent underline - saddle brown */}
                     <div
                         style={{
                             display: 'flex',
                             width: 80,
                             height: 4,
-                            backgroundColor: '#1a3a2a',
+                            backgroundColor: colors.accent,
                             marginTop: 30,
                         }}
                     />
@@ -113,13 +125,13 @@ export async function GET(request: NextRequest) {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '20px 50px',
-                        borderTop: '1px solid #e0ddd5',
-                        color: '#666',
+                        borderTop: `1px solid ${colors.border}`,
+                        color: colors.muted,
                         fontSize: 18,
                     }}
                 >
                     <span>{t.tagline}</span>
-                    <span style={{ color: '#1a3a2a', fontWeight: 500 }}>{domain}</span>
+                    <span style={{ color: colors.accent, fontWeight: 500 }}>{domain}</span>
                 </div>
             </div>
         ),
