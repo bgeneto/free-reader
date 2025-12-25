@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Copy, ChevronDown, ArrowUpRight } from "lucide-react";
+import { Check, Copy, ChevronDown, ArrowUpRight, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
+import TurndownService from "turndown";
 import {
   Menu,
   MenuTrigger,
@@ -14,6 +15,17 @@ import {
   MenuCheckboxItem,
   MenuGroupLabel,
 } from "@/components/ui/menu";
+
+// Initialize turndown service with good defaults for article content
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  hr: "---",
+  bulletListMarker: "-",
+  codeBlockStyle: "fenced",
+  emDelimiter: "_",
+  strongDelimiter: "**",
+  linkStyle: "inlined",
+});
 
 // AI Service Icons
 const OpenAIIcon = ({ className }: { className?: string }) => (
@@ -38,6 +50,17 @@ const ClaudeIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const GeminiIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182c5.414 0 9.818 4.404 9.818 9.818 0 5.414-4.404 9.818-9.818 9.818-5.414 0-9.818-4.404-9.818-9.818 0-5.414 4.404-9.818 9.818-9.818zm0 1.636c-1.797 0-3.476.553-4.862 1.494l4.862 8.421 4.862-8.421A8.122 8.122 0 0012 3.818zm-5.814 2.338A8.168 8.168 0 003.818 12c0 4.527 3.655 8.182 8.182 8.182.112 0 .224-.002.334-.007L7.186 10.38l-.002-.003-1-1.73-.002-.003-.996-1.723v-.003l-1-1.732v-.003l-.186-.322-.814.292zm11.628 0l-.814-.292-.186.322v.003l-1 1.732v.003l-.996 1.723-.002.003-.998 1.727-.002.003-5.148 8.916c.11.005.222.007.334.007 4.527 0 8.182-3.655 8.182-8.182a8.168 8.168 0 00-2.368-5.844l-.002-.003v.003l-.002-.003.002-.002v-.003l.002-.002v-.003l-.002-.004z" />
+  </svg>
+);
+
 interface Source {
   url: string;
   title: string;
@@ -47,8 +70,8 @@ interface Source {
 interface CopyPageDropdownProps {
   url: string;
   articleTitle?: string;
-  articleContent?: string;
-  textContent?: string;
+  articleContent?: string; // HTML content for proper Markdown conversion
+  textContent?: string; // Plain text content (stripped)
   sources?: Source[];
   source?: string;
   viewMode?: string;
@@ -60,6 +83,7 @@ interface CopyPageDropdownProps {
 export function CopyPageDropdown({
   url,
   articleTitle = "Article",
+  articleContent,
   textContent,
   sources = [],
   source,
@@ -68,16 +92,22 @@ export function CopyPageDropdown({
 }: CopyPageDropdownProps) {
   const t = useTranslations("copyPage");
   const [copied, setCopied] = useState(false);
+  const [copiedType, setCopiedType] = useState<"markdown" | "plaintext" | null>(null);
   const [selectedSources, setSelectedSources] = useState<Set<number>>(
     new Set(sources.map((_, i) => i))
   );
 
-  // Generate markdown content
+  // Generate properly formatted Markdown from HTML content using turndown
   const generateMarkdown = (includeContent = true) => {
     let markdown = `# ${articleTitle}\n\n`;
     markdown += `**Source:** ${url}\n\n`;
 
-    if (includeContent && textContent) {
+    if (includeContent && articleContent) {
+      // Convert HTML to proper Markdown using turndown
+      const convertedContent = turndownService.turndown(articleContent);
+      markdown += `---\n\n${convertedContent}\n\n`;
+    } else if (includeContent && textContent) {
+      // Fallback to plain text if no HTML available
       markdown += `---\n\n${textContent}\n\n`;
     }
 
@@ -93,18 +123,58 @@ export function CopyPageDropdown({
     return markdown;
   };
 
-  const handleCopy = async () => {
+  // Generate plain text content (stripped of formatting)
+  const generatePlainText = (includeContent = true) => {
+    let plainText = `${articleTitle}\n\n`;
+    plainText += `Source: ${url}\n\n`;
+
+    if (includeContent && textContent) {
+      plainText += `---\n\n${textContent}\n\n`;
+    }
+
+    if (sources.length > 0) {
+      plainText += `Sources:\n\n`;
+      sources.forEach((source, index) => {
+        if (selectedSources.has(index)) {
+          plainText += `- ${source.title}: ${source.url}\n`;
+        }
+      });
+    }
+
+    return plainText;
+  };
+
+  const handleCopyMarkdown = async () => {
     try {
       const markdown = generateMarkdown();
       await navigator.clipboard.writeText(markdown);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedType("markdown");
+      setTimeout(() => {
+        setCopied(false);
+        setCopiedType(null);
+      }, 2000);
     } catch (error) {
       console.error("Failed to copy:", error);
     }
   };
 
-  const handleOpenInAI = (service: "chatgpt" | "claude") => {
+  const handleCopyPlainText = async () => {
+    try {
+      const plainText = generatePlainText();
+      await navigator.clipboard.writeText(plainText);
+      setCopied(true);
+      setCopiedType("plaintext");
+      setTimeout(() => {
+        setCopied(false);
+        setCopiedType(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const handleOpenInAI = (service: "chatgpt" | "claude" | "gemini") => {
     // Build the proxy URL with query parameters
     const siteUrl = process.env.NEXT_PUBLIC_URL || "https://smry.ai";
     const proxyUrlObj = new URL(`${siteUrl}/proxy`);
@@ -124,6 +194,10 @@ export function CopyPageDropdown({
       case "claude":
         const claudePrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
         aiUrl = `https://claude.ai/new?q=${encodeURIComponent(claudePrompt)}`;
+        break;
+      case "gemini":
+        const geminiPrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
+        aiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(geminiPrompt)}`;
         break;
     }
 
@@ -175,21 +249,38 @@ export function CopyPageDropdown({
           }}
         />
         <MenuPopup side="bottom" align="end" className="w-64">
-          {/* Copy Option */}
+          {/* Copy as Markdown Option */}
           <MenuItem
-            onClick={handleCopy}
+            onClick={handleCopyMarkdown}
             className="flex items-center gap-3 p-2 cursor-pointer"
           >
             <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
               <Copy className="size-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium">{t("copyPage")}</span>
+              <span className="text-sm font-medium">{t("copyAsMarkdown")}</span>
               <span className="text-xs text-muted-foreground">
-                {t("copyAsMarkdown")}
+                {t("copyAsMarkdownDesc")}
               </span>
             </div>
-            {copied && <Check className="ml-auto size-4 text-green-600" />}
+            {copied && copiedType === "markdown" && <Check className="ml-auto size-4 text-green-600" />}
+          </MenuItem>
+
+          {/* Copy as Plain Text Option */}
+          <MenuItem
+            onClick={handleCopyPlainText}
+            className="flex items-center gap-3 p-2 cursor-pointer"
+          >
+            <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
+              <FileText className="size-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{t("copyAsPlainText")}</span>
+              <span className="text-xs text-muted-foreground">
+                {t("copyAsPlainTextDesc")}
+              </span>
+            </div>
+            {copied && copiedType === "plaintext" && <Check className="ml-auto size-4 text-green-600" />}
           </MenuItem>
 
           <MenuSeparator />
@@ -223,6 +314,24 @@ export function CopyPageDropdown({
             <div className="flex flex-1 flex-col">
               <span className="flex items-center gap-1 text-sm font-medium">
                 {t("openInClaude")}
+                <ArrowUpRight className="size-3 text-muted-foreground" />
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t("askQuestions")}
+              </span>
+            </div>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => handleOpenInAI("gemini")}
+            className="flex items-center gap-3 p-2 cursor-pointer"
+          >
+            <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
+              <GeminiIcon className="size-4" />
+            </div>
+            <div className="flex flex-1 flex-col">
+              <span className="flex items-center gap-1 text-sm font-medium">
+                {t("openInGemini")}
                 <ArrowUpRight className="size-3 text-muted-foreground" />
               </span>
               <span className="text-xs text-muted-foreground">
@@ -283,11 +392,11 @@ export function CopyPageDropdown({
     <div className={cn("flex items-center", className)}>
       {/* Split Button Container with shared border */}
       <div className="flex items-center rounded-lg border border-input bg-background shadow-sm">
-        {/* Main Copy Button */}
+        {/* Main Copy Button - defaults to Copy as Markdown */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleCopy}
+          onClick={handleCopyMarkdown}
           className="h-8 rounded-r-none border-0 gap-1.5 text-xs font-medium hover:bg-accent"
         >
           {copied ? (
@@ -320,21 +429,38 @@ export function CopyPageDropdown({
             }}
           />
           <MenuPopup side="bottom" align="end" className="w-64">
-            {/* Copy Option */}
+            {/* Copy as Markdown Option */}
             <MenuItem
-              onClick={handleCopy}
+              onClick={handleCopyMarkdown}
               className="flex items-center gap-3 p-2 cursor-pointer"
             >
               <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
                 <Copy className="size-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{t("copyPage")}</span>
+                <span className="text-sm font-medium">{t("copyAsMarkdown")}</span>
                 <span className="text-xs text-muted-foreground">
-                  {t("copyAsMarkdown")}
+                  {t("copyAsMarkdownDesc")}
                 </span>
               </div>
-              {copied && <Check className="ml-auto size-4 text-green-600" />}
+              {copied && copiedType === "markdown" && <Check className="ml-auto size-4 text-green-600" />}
+            </MenuItem>
+
+            {/* Copy as Plain Text Option */}
+            <MenuItem
+              onClick={handleCopyPlainText}
+              className="flex items-center gap-3 p-2 cursor-pointer"
+            >
+              <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
+                <FileText className="size-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{t("copyAsPlainText")}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("copyAsPlainTextDesc")}
+                </span>
+              </div>
+              {copied && copiedType === "plaintext" && <Check className="ml-auto size-4 text-green-600" />}
             </MenuItem>
 
             <MenuSeparator />
@@ -368,6 +494,24 @@ export function CopyPageDropdown({
               <div className="flex flex-1 flex-col">
                 <span className="flex items-center gap-1 text-sm font-medium">
                   {t("openInClaude")}
+                  <ArrowUpRight className="size-3 text-muted-foreground" />
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t("askQuestions")}
+                </span>
+              </div>
+            </MenuItem>
+
+            <MenuItem
+              onClick={() => handleOpenInAI("gemini")}
+              className="flex items-center gap-3 p-2 cursor-pointer"
+            >
+              <div className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted/50">
+                <GeminiIcon className="size-4" />
+              </div>
+              <div className="flex flex-1 flex-col">
+                <span className="flex items-center gap-1 text-sm font-medium">
+                  {t("openInGemini")}
                   <ArrowUpRight className="size-3 text-muted-foreground" />
                 </span>
                 <span className="text-xs text-muted-foreground">
