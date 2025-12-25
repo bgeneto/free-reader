@@ -4,7 +4,7 @@
 
 FreeReader is a self-hostable web tool designed to declutter the modern web. By stripping away intrusive JavaScript, blocking trackers, and bypassing CSS overlays, FreeReader extracts the core content of any article and presents it in a distraction-free, minimalist interface.
 
-Powered by Python and enhanced with lightweight AI for content extraction, it ensures that knowledge remains accessible and readable.
+Powered by Nextjs and enhanced with lightweight AI for content extraction, it ensures that knowledge remains accessible and readable.
 
 ---
 
