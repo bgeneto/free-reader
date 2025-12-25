@@ -22,7 +22,10 @@ import { AudioPlayer } from "../ui/audio-player";
 import { Crown, Volume2 } from "lucide-react";
 
 // Daily limit configurable via env var (must be NEXT_PUBLIC_ to be available in browser)
-const DAILY_LIMIT = parseInt(process.env.NEXT_PUBLIC_SUMMARY_DAILY_LIMIT || '20', 10);
+const envLimit = process.env.NEXT_PUBLIC_SUMMARY_DAILY_LIMIT;
+console.log('[ENV_DEBUG] NEXT_PUBLIC_SUMMARY_DAILY_LIMIT raw:', envLimit);
+const DAILY_LIMIT = parseInt(envLimit || '20', 10);
+console.log('[ENV_DEBUG] DAILY_LIMIT parsed:', DAILY_LIMIT);
 
 // Hook to track daily summary usage
 function useDailyUsage() {

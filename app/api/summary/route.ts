@@ -126,6 +126,8 @@ export async function POST(request: NextRequest) {
     // Returns null if no URL provided (content-based caching fallback)
     const normalizedUrl = url ? extractArticleUrl(url) : null;
 
+    console.log('[CACHE_DEBUG] Request received:', { url, normalizedUrl, language, source });
+
     logger.debug({
       clientIp,
       language,
@@ -141,10 +143,14 @@ export async function POST(request: NextRequest) {
       ? `summary:${source}:${language}:${normalizedUrl}`
       : `summary:${source}:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
 
+    console.log('[CACHE_DEBUG] Generated Key:', cacheKey);
+
     // Try to get cached summary, but don't fail if Redis is down
     let cached: string | null = null;
     try {
+      console.log('[CACHE_DEBUG] Attempting Redis GET...');
       cached = await redis.get<string>(cacheKey);
+      console.log('[CACHE_DEBUG] Redis GET Result:', cached ? 'HIT (Length: ' + cached.length + ')' : 'MISS');
 
       if (cached && typeof cached === "string") {
         logger.info({ cacheKey }, 'Cache hit - returning cached summary');
@@ -158,6 +164,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (redisError) {
+      console.error('[CACHE_DEBUG] Redis GET Error:', redisError);
       // If Redis cache retrieval fails, log it but proceed to generate the summary
       logger.warn({ error: redisError }, 'Redis cache retrieval failed, will generate fresh summary');
     }
@@ -175,7 +182,10 @@ export async function POST(request: NextRequest) {
     if (!isPremium && !disableRateLimit) {
       try {
         // Configurable daily limit (default: 20)
-        const dailyLimit = parseInt(process.env.SUMMARY_DAILY_LIMIT || '20', 10);
+        const envLimit = process.env.SUMMARY_DAILY_LIMIT;
+        console.log('[ENV_DEBUG] SUMMARY_DAILY_LIMIT raw:', envLimit);
+        const dailyLimit = parseInt(envLimit || '20', 10);
+        console.log('[ENV_DEBUG] dailyLimit parsed:', dailyLimit);
 
         const dailyRatelimit = new Ratelimit({
           redis: redis,
@@ -252,9 +262,11 @@ export async function POST(request: NextRequest) {
         },
       ],
       onFinish: async ({ text, usage }) => {
+        console.log('[CACHE_DEBUG] onFinish triggered. Text length:', text.length);
         // Cache the complete summary after streaming finishes
         // Use 'after' to ensure this background task completes even if the response is closed
         after(async () => {
+          console.log('[CACHE_DEBUG] inside after() callback');
           logger.info({
             length: text.length,
             inputTokens: usage.inputTokens,
@@ -264,10 +276,13 @@ export async function POST(request: NextRequest) {
 
           // Try to cache, but don't fail if Redis is down
           try {
+            console.log('[CACHE_DEBUG] Attempting Redis SET...');
             // Cache for 30 days (2592000 seconds)
             await redis.set(cacheKey, text, { ex: 2592000 });
+            console.log('[CACHE_DEBUG] Redis SET success for key:', cacheKey);
             logger.debug('Summary cached successfully');
           } catch (redisError) {
+            console.error('[CACHE_DEBUG] Redis SET Error:', redisError);
             // Log the error but don't break the streaming response
             logger.warn({ error: redisError }, 'Failed to cache summary in Redis');
           }
@@ -277,6 +292,7 @@ export async function POST(request: NextRequest) {
 
     return result.toTextStreamResponse();
   } catch (error) {
+    console.error('[CACHE_DEBUG] Fatal API Error:', error);
     logger.error({ error }, 'Unexpected error');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "An unexpected error occurred" },
