@@ -126,7 +126,12 @@ export async function POST(request: NextRequest) {
     // Returns null if no URL provided (content-based caching fallback)
     const normalizedUrl = url ? extractArticleUrl(url) : null;
 
-    console.log('[CACHE_DEBUG] Request received:', { url, normalizedUrl, language, source });
+    // DEBUG: Log request details using logger to ensure it appears in docker logs
+    logger.warn({
+      action: '[CACHE_DEBUG]',
+      step: 'request_received',
+      details: { url, normalizedUrl, language, source }
+    }, 'Cache Debug: Request Received');
 
     logger.debug({
       clientIp,
@@ -143,14 +148,28 @@ export async function POST(request: NextRequest) {
       ? `summary:${source}:${language}:${normalizedUrl}`
       : `summary:${source}:${language}:${Buffer.from(content.substring(0, 500)).toString('base64').substring(0, 50)}`;
 
-    console.log('[CACHE_DEBUG] Generated Key:', cacheKey);
+    logger.warn({
+      action: '[CACHE_DEBUG]',
+      step: 'key_generated',
+      cacheKey
+    }, 'Cache Debug: Key Generated');
 
     // Try to get cached summary, but don't fail if Redis is down
     let cached: string | null = null;
     try {
-      console.log('[CACHE_DEBUG] Attempting Redis GET...');
+      logger.warn({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_get_start'
+      }, 'Cache Debug: Attempting Redis GET');
+
       cached = await redis.get<string>(cacheKey);
-      console.log('[CACHE_DEBUG] Redis GET Result:', cached ? 'HIT (Length: ' + cached.length + ')' : 'MISS');
+
+      logger.warn({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_get_result',
+        result: cached ? 'HIT' : 'MISS',
+        length: cached?.length
+      }, 'Cache Debug: Redis GET Result');
 
       if (cached && typeof cached === "string") {
         logger.info({ cacheKey }, 'Cache hit - returning cached summary');
@@ -164,7 +183,12 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (redisError) {
-      console.error('[CACHE_DEBUG] Redis GET Error:', redisError);
+      logger.warn({
+        action: '[CACHE_DEBUG]',
+        step: 'redis_get_error',
+        error: redisError
+      }, 'Cache Debug: Redis GET Error');
+
       // If Redis cache retrieval fails, log it but proceed to generate the summary
       logger.warn({ error: redisError }, 'Redis cache retrieval failed, will generate fresh summary');
     }
@@ -183,9 +207,15 @@ export async function POST(request: NextRequest) {
       try {
         // Configurable daily limit (default: 20)
         const envLimit = process.env.SUMMARY_DAILY_LIMIT;
-        console.log('[ENV_DEBUG] SUMMARY_DAILY_LIMIT raw:', envLimit);
+
+        // DEBUG: Enviroment variable check
+        logger.warn({
+          action: '[ENV_DEBUG]',
+          raw: envLimit,
+          parsed: parseInt(envLimit || '20', 10)
+        }, 'Env Debug: SUMMARY_DAILY_LIMIT');
+
         const dailyLimit = parseInt(envLimit || '20', 10);
-        console.log('[ENV_DEBUG] dailyLimit parsed:', dailyLimit);
 
         const dailyRatelimit = new Ratelimit({
           redis: redis,
@@ -238,6 +268,9 @@ export async function POST(request: NextRequest) {
     // Combine base prompt with language instruction
     const userPrompt = `${BASE_SUMMARY_PROMPT}\n\n${languageInstruction}`;
 
+    // Variable to manually accumulate text if onFinish's text is empty
+    let fullText = "";
+
     // Using OpenRouter's free tier model with automatic provider fallback
     // Primary model: openai/gpt-oss-20b:free (20B parameters)
     // - Free tier with rate limits (100-200 requests/day depending on account credits)
@@ -261,28 +294,69 @@ export async function POST(request: NextRequest) {
           content: userPrompt.replace("{text}", content.substring(0, 6000)),
         },
       ],
+      // Manually accumulate text because onFinish seems to receive empty text in some configurations
+      onChunk: async ({ chunk }) => {
+        if (chunk.type === 'text-delta') {
+          fullText += chunk.textDelta;
+        }
+      },
       onFinish: async ({ text, usage }) => {
-        console.log('[CACHE_DEBUG] onFinish triggered. Text length:', text.length);
+        // Fallback to manual accumulation if text is empty
+        const validationText = text && text.length > 0 ? text : fullText;
+
+        logger.warn({
+          action: '[CACHE_DEBUG]',
+          step: 'onFinish',
+          providedTextLength: text?.length || 0,
+          accumulatedTextLength: fullText.length,
+          finalTextLength: validationText.length
+        }, 'Cache Debug: Stream Finished');
         // Cache the complete summary after streaming finishes
         // Use 'after' to ensure this background task completes even if the response is closed
         after(async () => {
-          console.log('[CACHE_DEBUG] inside after() callback');
+          logger.warn({
+            action: '[CACHE_DEBUG]',
+            step: 'after_callback'
+          }, 'Cache Debug: Inside after()');
+
+          if (!validationText || validationText.length === 0) {
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'abort_cache_empty',
+              reason: 'Text is empty'
+            }, 'Cache Debug: Aborting cache save (empty text)');
+            return;
+          }
+
           logger.info({
-            length: text.length,
+            length: validationText.length,
             inputTokens: usage.inputTokens,
             outputTokens: usage.outputTokens,
             totalTokens: usage.totalTokens
-          }, 'Summary generated with OpenRouter');
+          }, 'Summary generated with AI');
 
           // Try to cache, but don't fail if Redis is down
           try {
-            console.log('[CACHE_DEBUG] Attempting Redis SET...');
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'redis_set_start',
+              cacheKey
+            }, 'Cache Debug: Attempting Redis SET');
             // Cache for 30 days (2592000 seconds)
-            await redis.set(cacheKey, text, { ex: 2592000 });
-            console.log('[CACHE_DEBUG] Redis SET success for key:', cacheKey);
+            await redis.set(cacheKey, validationText, { ex: 2592000 });
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'redis_set_success',
+              cacheKey,
+              contentSnippet: validationText.substring(0, 50) + '...'
+            }, 'Cache Debug: Redis SET Success');
             logger.debug('Summary cached successfully');
           } catch (redisError) {
-            console.error('[CACHE_DEBUG] Redis SET Error:', redisError);
+            logger.warn({
+              action: '[CACHE_DEBUG]',
+              step: 'redis_set_error',
+              error: redisError
+            }, 'Cache Debug: Redis SET Error');
             // Log the error but don't break the streaming response
             logger.warn({ error: redisError }, 'Failed to cache summary in Redis');
           }
@@ -292,7 +366,11 @@ export async function POST(request: NextRequest) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error('[CACHE_DEBUG] Fatal API Error:', error);
+    logger.warn({
+      action: '[CACHE_DEBUG]',
+      step: 'fatal_api_error',
+      error: error
+    }, 'Cache Debug: Fatal Error');
     logger.error({ error }, 'Unexpected error');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "An unexpected error occurred" },
