@@ -197,7 +197,7 @@ export function CopyPageDropdown({
         break;
       case "gemini":
         const geminiPrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
-        aiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(geminiPrompt)}`;
+        aiUrl = `https://aistudio.google.com/prompts/new_chat?prompt=${encodeURIComponent(geminiPrompt)}`;
         break;
     }
 
