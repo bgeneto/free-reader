@@ -25,7 +25,7 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             siteName,
             siteVersion: siteConfig.version,
             author: "bgeneto",
-            italic: (chunks: React.ReactNode) => <span className="font-heading italic">{chunks}</span>
+            bold: (chunks: React.ReactNode) => <span className="font-heading font-bold">{chunks}</span>
           })}. {t("tagline")}.
         </p>
       </div>
