@@ -1,5 +1,6 @@
 export type SiteConfig = {
   name: string;
+  version: string;
   description: string;
   url: string;
   ogImage: string;
@@ -11,6 +12,7 @@ export type SiteConfig = {
 
 export const siteConfig: SiteConfig = {
   name: process.env.NEXT_PUBLIC_SITE_NAME || "SMRY",
+  version: process.env.NEXT_PUBLIC_SITE_VERSION || "0.0.0",
   description:
     "Paste any paywalled article link and get the full text plus an AI summary. Free to use, no account, no browser extension.",
   url: process.env.NEXT_PUBLIC_URL || "https://smry.ai",

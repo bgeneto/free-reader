@@ -4,9 +4,11 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
+import { siteConfig } from "@/app/config/site";
+
 export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
   const t = useTranslations("footer");
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "SMRY";
+  const siteName = siteConfig.name;
   const currentYear = new Date().getFullYear();
 
   return (
@@ -21,6 +23,7 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
         <p className="text-center text-sm text-muted-foreground font-serif">
           {t.rich("madeBy", {
             siteName,
+            siteVersion: siteConfig.version,
             author: "bgeneto",
             italic: (chunks: React.ReactNode) => <span className="font-heading italic">{chunks}</span>
           })}. {t("tagline")}.

@@ -61,7 +61,7 @@
     "logosBy": "Logo由Logo.dev提供",
     "colophon": "版权页",
     "tagline": "数字时代的新闻自由",
-    "madeBy": "{siteName} 由 <italic>{author}</italic> 用 💖 制作，基于 SMRY.ai"
+    "madeBy": "{siteName} {siteVersion} 由 <italic>{author}</italic> 用 💖 制作，基于 SMRY.ai"
   },
   "foundersLetter": {
     "label": "开发者的一封信",

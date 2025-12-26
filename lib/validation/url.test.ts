@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeUrl, isValidUrl, extractArticleUrl } from "./url";
+import { normalizeUrl, isValidUrl, extractArticleUrl, extractFirstUrl, NormalizedUrlSchema } from "./url";
 
 describe("normalizeUrl", () => {
   it("normalizes full https URL", () => {
@@ -40,6 +40,31 @@ describe("normalizeUrl", () => {
 
   it("throws on invalid URL", () => {
     expect(() => normalizeUrl("not a url")).toThrow("Please enter a valid URL");
+  });
+
+  it("blocks localhost", () => {
+    expect(() => normalizeUrl("http://localhost:3000")).toThrow("Access to private or local networks is restricted");
+    expect(() => normalizeUrl("https://localhost")).toThrow("Access to private or local networks is restricted");
+  });
+
+  it("blocks private IPv4 addresses", () => {
+    expect(() => normalizeUrl("http://127.0.0.1")).toThrow("Access to private or local networks is restricted");
+    expect(() => normalizeUrl("http://10.0.0.1")).toThrow("Access to private or local networks is restricted");
+    expect(() => normalizeUrl("http://192.168.1.1")).toThrow("Access to private or local networks is restricted");
+    expect(() => normalizeUrl("http://172.16.0.0")).toThrow("Access to private or local networks is restricted");
+  });
+
+  it("blocks 0.0.0.0", () => {
+    expect(() => normalizeUrl("http://0.0.0.0")).toThrow("Access to private or local networks is restricted");
+  });
+
+  it("allows public IP addresses", () => {
+    expect(normalizeUrl("http://8.8.8.8")).toBe("http://8.8.8.8");
+    expect(normalizeUrl("https://1.1.1.1")).toBe("https://1.1.1.1");
+  });
+
+  it("allows public domains", () => {
+    expect(normalizeUrl("https://google.com")).toBe("https://google.com");
   });
 });
 
@@ -94,5 +119,55 @@ describe("extractArticleUrl", () => {
   it("preserves root path", () => {
     const url = "https://example.com/";
     expect(extractArticleUrl(url)).toBe("https://example.com/");
+  });
+});
+
+describe("extractFirstUrl", () => {
+  it("extracts URL from simple text", () => {
+    expect(extractFirstUrl("Check this out: https://example.com")).toBe("https://example.com");
+  });
+
+  it("extracts URL from HTML href", () => {
+    const html = 'Internal Link: <a href="https://www.example.com">Visit Example</a>';
+    expect(extractFirstUrl(html)).toBe("https://www.example.com");
+  });
+
+  it("handles glued URLs (extracts first)", () => {
+    const text = "https://oglobo.globo.com/articlehttps://another.com";
+    expect(extractFirstUrl(text)).toBe("https://oglobo.globo.com/article");
+  });
+
+  it("strips trailing punctuation", () => {
+    expect(extractFirstUrl("Go to https://google.com.")).toBe("https://google.com");
+    expect(extractFirstUrl("Is it www.google.com?")).toBe("www.google.com");
+    expect(extractFirstUrl("Visit (https://google.com)")).toBe("https://google.com");
+  });
+
+  it("handles long query params", () => {
+    const url = "https://example.com/path?query=verylongstring&other=param";
+    const text = `Some text ${url} matches`;
+    expect(extractFirstUrl(text)).toBe(url);
+  });
+});
+
+describe("NormalizedUrlSchema extraction", () => {
+  it("extracts and normalizes URL from mixed text", () => {
+    const result = NormalizedUrlSchema.parse("Read this https://example.com now");
+    expect(result).toBe("https://example.com");
+  });
+
+  it("handles glued URLs via schema", () => {
+    const text = "https://example.com/foohttps://bar.com";
+    const result = NormalizedUrlSchema.parse(text);
+    expect(result).toBe("https://example.com/foo");
+  });
+
+  it("enforces max length", () => {
+    const longUrl = "https://example.com/" + "a".repeat(1001);
+    const result = NormalizedUrlSchema.safeParse(longUrl);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toContain("1000 characters or less");
+    }
   });
 });
