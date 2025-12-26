@@ -28,7 +28,7 @@ const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
 
 // Request schema for useCompletion
 const SummaryRequestSchema = z.object({
-  prompt: z.string().min(2000, "Content must be at least 2000 characters"),
+  prompt: z.string().min(400, "Content must be at least 400 characters"),
   title: z.string().optional(),
   url: z.string().optional(),
   ip: z.string().optional(),
