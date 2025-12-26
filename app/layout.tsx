@@ -23,7 +23,7 @@ const lora = Lora({
   subsets: ["latin"],
   variable: "--font-serif",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 const sourceSans = Source_Sans_3({
