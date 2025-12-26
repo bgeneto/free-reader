@@ -61,7 +61,7 @@
     "logosBy": "Logo's geleverd door Logo.dev",
     "colophon": "Colofon",
     "tagline": "Vrije pers voor het digitale tijdperk",
-    "madeBy": "{siteName} {siteVersion} is gemaakt met 💖 door <italic>{author}</italic> gebaseerd op SMRY.ai"
+    "madeBy": "{siteName} v{siteVersion} is gemaakt met 💖 door <italic>{author}</italic> gebaseerd op SMRY.ai"
   },
   "foundersLetter": {
     "label": "Een bericht van de ontwikkelaar",

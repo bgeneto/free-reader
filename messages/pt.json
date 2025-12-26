@@ -61,7 +61,7 @@
     "logosBy": "Logos fornecidos por Logo.dev",
     "colophon": "Colofão",
     "tagline": "Nenhum direito reservado",
-    "madeBy": "{siteName} {siteVersion} foi feito com 💖 por <italic>{author}</italic> baseado no SMRY.ai"
+    "madeBy": "{siteName} v{siteVersion} foi feito com 💖 por <italic>{author}</italic> baseado no SMRY.ai"
   },
   "foundersLetter": {
     "label": "Uma nota do desenvolvedor",

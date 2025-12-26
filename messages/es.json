@@ -61,7 +61,7 @@
     "logosBy": "Logos proporcionados por Logo.dev",
     "colophon": "Colofón",
     "tagline": "Prensa libre para la era digital",
-    "madeBy": "{siteName} {siteVersion} fue hecho con 💖 por <italic>{author}</italic> basado en SMRY.ai"
+    "madeBy": "{siteName} v{siteVersion} fue hecho con 💖 por <italic>{author}</italic> basado en SMRY.ai"
   },
   "foundersLetter": {
     "label": "Una nota del desarrollador",
