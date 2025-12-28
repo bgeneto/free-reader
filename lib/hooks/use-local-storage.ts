@@ -11,8 +11,9 @@ interface StorageEventDetail<T> {
 const useLocalStorage = <T>(
   key: string,
   initialValue: T,
-): [T, (value: T) => void] => {
+): [T, (value: T) => void, boolean] => {
   const [storedValue, setStoredValue] = useState(initialValue);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Read initial value from localStorage
   useEffect(() => {
@@ -25,6 +26,8 @@ const useLocalStorage = <T>(
         }
       } catch (error) {
         console.warn(`Error reading localStorage key "${key}":`, error);
+      } finally {
+        setIsInitialized(true);
       }
     }, 0);
     return () => clearTimeout(timer);
@@ -72,7 +75,7 @@ const useLocalStorage = <T>(
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
   };
-  return [storedValue, setValue];
+  return [storedValue, setValue, isInitialized];
 };
 
 export default useLocalStorage;

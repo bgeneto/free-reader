@@ -97,8 +97,8 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
   // Get the currently selected article data
   const selectedArticle = articleResults[selectedSource]?.data;
 
-  // Persist language preference
-  const [preferredLanguage, setPreferredLanguage] = useLocalStorage<string>("summary-language", "en");
+  // Persist language preference with initialization tracking
+  const [preferredLanguage, setPreferredLanguage, isLanguageInitialized] = useLocalStorage<string>("summary-language", "en");
 
   // Helper function to build the request body with current values
   const buildRequestBody = useCallback(() => ({
@@ -180,6 +180,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
       !manualSource && // Only auto-generate if user hasn't manually selected a source
       !processedCompletion &&
       !isLoading &&
+      isLanguageInitialized && // Wait for language preference to load from localStorage
       selectedArticle?.article?.textContent &&
       contentLengths[selectedSource] >= MIN_CHARS_FOR_SUMMARY
     ) {
@@ -188,7 +189,7 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
         body: buildRequestBody(),
       });
     }
-  }, [selectedArticle, processedCompletion, isLoading, complete, selectedSource, contentLengths, isOpen, manualSource, buildRequestBody]);
+  }, [selectedArticle, processedCompletion, isLoading, complete, selectedSource, contentLengths, isOpen, manualSource, isLanguageInitialized, buildRequestBody]);
 
   // Track usage when a summary completes (only for non-premium, non-cached responses)
   useEffect(() => {
