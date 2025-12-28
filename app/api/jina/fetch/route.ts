@@ -353,12 +353,11 @@ async function fetchFromJinaPremium(
         const response = await fetch(`https://r.jina.ai/${url}`, {
             method: "GET",
             headers: {
-                "Accept": "application/json",
                 "Authorization": `Bearer ${apiKey}`,
                 "X-Engine": "browser",
                 "X-Timeout": "15",
                 "X-Token-Budget": "75000",
-                "X-With-Links-Summary": "true"
+                "X-With-Links-Summary": "false"
             },
             signal: controller.signal,
         });
