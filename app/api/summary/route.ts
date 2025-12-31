@@ -63,62 +63,64 @@ const SummaryRequestSchema = z.object({
 });
 
 // Base summary prompt template
-const BASE_SUMMARY_PROMPT = `You are an expert researcher and editor, skilled at distilling complex texts into clear, concise, and accurate summaries.
+const BASE_SUMMARY_PROMPT = `# Role
+You are an elite news editor and researcher. Your goal is to distill complex news articles into objective, scannable, and high-fidelity summaries.
 
-I will provide you with an article. Your task is to generate a summary that captures the essence of the text while adhering to the following instructions.
+# Task
+Analyze the provided news article embedded in the <article> tags below. Produce a structured summary that adheres strictly to the constraints and format defined.
 
-Instructions for the summary:
+# Instructions
 
-Core Thesis: Begin by identifying and stating the article's central argument or main topic in a single, clear sentence.
+1. **Analyze the Type:** Determine if the text is "Hard News" (factual reporting) or "Analysis/Op-Ed" (opinion-based).
+   - If Hard News: Focus on the "5 Ws" (Who, what, where, when, why).
+   - If Op-Ed: Focus on the "Core Argument/Thesis."
+2. **Draft the Summary:** Follow the strict output format below.
 
-Key Points: Extract the primary supporting arguments, findings, or main points of the article. Present these as a bulleted list, with each point being a complete and self-contained sentence.
+# Constraints
+- **Neutrality:** Maintain a strictly objective tone. Remove sensationalism.
+- **Accuracy:** Do not add outside knowledge. Rely *only* on the provided text.
+- **Quotes:** Paraphrase general info, but you MAY retain 1-2 short, high-impact quotes if they are crucial to the story (e.g., an official statement).
+- **Exclusions:** Remove minor dates, specific street addresses, tangential backstory, or fluff.
 
-Conclusion: Summarize the article's conclusion, implications, or call to action in a final sentence.
+# Output Format
+The output must use the following structure (in strictly formatted Markdown):
 
-What to Exclude:
+**[Headline]**
+(Create a short, punchy, neutral headline 5-8 words max)
 
-Do not include minor details, tangential information, or lengthy, specific examples.
+**The Lead**
+(A single, powerful paragraph of 2-3 sentences summarizing the most critical event or argument. This replaces the "Thesis" requirement to fit all news types.)
 
-Paraphrase all information; do not use direct quotes.
+**Key Details**
+* (Bullet point 1: A major supporting fact or argument)
+* (Bullet point 2: Another major supporting fact)
+* (Bullet point 3: Another major supporting fact)
+* (Bullet point 4: Optional extra point if necessary)
 
-Exclude your own opinions, interpretations, or any information not explicitly present in the provided article.
+**Implications**
+(A final 1-2 sentence concluding statement regarding the impact, future outlook, or call to action.)
 
-Format and Structure:
-
-Start with a brief introductory paragraph that states the core thesis.
-
-Follow with a bulleted list of the key supporting points.
-
-End with a concluding sentence that captures the article's final message.
-
-Length: The entire summary should be approximately 2-3 paragraphs.
-
-Tone and Audience:
-
-Maintain a neutral, objective, and informative tone throughout.
-
-The summary should be written for an audience that has not read the article and needs to quickly grasp its essential information.
-
-Here is the article to summarize:
-
-{text}`;
+# Input Article
+<article>
+{text}
+</article>`;
 
 // Language-specific instructions
 const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
-  en: "Summarize in English.",
-  es: "Summarize in Spanish.",
-  fr: "Summarize in French.",
-  de: "Summarize in German.",
-  zh: "Summarize in Chinese.",
-  ja: "Summarize in Japanese.",
-  pt: "Summarize in Portuguese.",
-  ru: "Summarize in Russian.",
-  hi: "Summarize in Hindi.",
-  it: "Summarize in Italian.",
-  ko: "Summarize in Korean.",
-  ar: "Summarize in Arabic.",
-  nl: "Summarize in Dutch.",
-  tr: "Summarize in Turkish.",
+  en: "Summarize this article in English.",
+  es: "Summarize this article in Spanish.",
+  fr: "Summarize this article in French.",
+  de: "Summarize this article in German.",
+  zh: "Summarize this article in Chinese.",
+  ja: "Summarize this article in Japanese.",
+  pt: "Summarize this article in Portuguese.",
+  ru: "Summarize this article in Russian.",
+  hi: "Summarize this article in Hindi.",
+  it: "Summarize this article in Italian.",
+  ko: "Summarize this article in Korean.",
+  ar: "Summarize this article in Arabic.",
+  nl: "Summarize this article in Dutch.",
+  tr: "Summarize this article in Turkish.",
 };
 
 /**
