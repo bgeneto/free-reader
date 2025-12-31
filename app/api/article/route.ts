@@ -240,26 +240,64 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy): HeadersInit {
 async function tryFetchWithStrategy(
   url: string,
   strategy: FetchStrategy
-): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean }> {
+): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean; headers?: Record<string, string> }> {
   const headers = buildFetchHeaders(url, strategy);
+  const controller = new AbortController();
+  const timeoutMs = 25000; // 25 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const response = await fetch(url, {
-    headers,
-    cache: "no-store",
-    redirect: "follow",
-  });
+  try {
+    const response = await fetch(url, {
+      headers,
+      cache: "no-store",
+      redirect: "follow",
+      signal: controller.signal,
+    });
 
-  // Check if blocked (401 Unauthorized, 403 Forbidden, 429 Rate Limited)
-  if (response.status === 401 || response.status === 403 || response.status === 429) {
-    return { status: response.status, blocked: true };
+    clearTimeout(timeoutId);
+
+    // Collect headers for debugging
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((val, key) => {
+      responseHeaders[key] = val;
+    });
+
+    // Check if blocked (401 Unauthorized, 403 Forbidden, 429 Rate Limited)
+    if (response.status === 401 || response.status === 403 || response.status === 429) {
+      logger.warn({
+        source: "fetch-fast",
+        strategy,
+        status: response.status,
+        headers: responseHeaders,
+        url: scrubUrl(url)
+      }, 'Request blocked by target site');
+
+      return { status: response.status, blocked: true, headers: responseHeaders };
+    }
+
+    if (!response.ok) {
+      logger.warn({
+        source: "fetch-fast",
+        strategy,
+        status: response.status,
+        headers: responseHeaders,
+        url: scrubUrl(url)
+      }, 'Request failed (non-blocked)');
+      return { status: response.status, blocked: false, headers: responseHeaders };
+    }
+
+    const html = await response.text();
+    return { html, strategy };
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      logger.error({ source: "fetch-fast", strategy, url: scrubUrl(url) }, 'Fetch request timed out');
+      return { status: 408, blocked: false };
+    }
+
+    throw error;
   }
-
-  if (!response.ok) {
-    return { status: response.status, blocked: false };
-  }
-
-  const html = await response.text();
-  return { html, strategy };
 }
 
 async function fetchArticleWithSmryFast(
@@ -273,11 +311,12 @@ async function fetchArticleWithSmryFast(
 
     let result = await tryFetchWithStrategy(url, "browser");
 
-    // If blocked (401/403/429), retry with Googlebot strategy
-    if ("blocked" in result && result.blocked) {
+    // If blocked (401/403/429) or timed out (408), retry with Googlebot strategy
+    if (("blocked" in result && result.blocked) || ("status" in result && result.status === 408)) {
+      const status = "status" in result ? result.status : "unknown";
       logger.info(
-        { source: "fetch-fast", hostname, blockedStatus: result.status, nextStrategy: "googlebot" },
-        `Browser blocked (${result.status}), retrying with Googlebot`
+        { source: "fetch-fast", hostname, blockedStatus: status, nextStrategy: "googlebot" },
+        `Browser strategy failed (${status}), retrying with Googlebot`
       );
 
       // Small delay before retry
@@ -400,6 +439,10 @@ async function fetchArticleWithWayback(
     // Pick a random User-Agent to avoid fingerprinting
     const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
 
+    const controller = new AbortController();
+    const timeoutMs = 20000; // 20 seconds timeout for Wayback (it can be slow)
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     const response = await fetch(waybackUrl, {
       headers: {
         // Core browser headers
@@ -425,7 +468,10 @@ async function fetchArticleWithWayback(
       },
       cache: "no-store",
       redirect: "follow",
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     // Specific logging for archive.org rate limits
     if (response.status === 429) {
@@ -531,7 +577,13 @@ async function fetchArticleWithWayback(
       article: validatedArticle,
       cacheURL: waybackUrl,
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      logger.error({ source: "wayback", waybackUrl, timeoutMs: 20000 }, 'Wayback fetch timed out');
+      return {
+        error: createNetworkError('Connection timed out when fetching from archive.org', waybackUrl, 408),
+      };
+    }
     logger.error({ source: "wayback", error, waybackUrl }, 'Wayback fetch exception');
     return {
       error: createNetworkError('Failed to fetch article from archive.org', waybackUrl, undefined, error),
