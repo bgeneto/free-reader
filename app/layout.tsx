@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Lora, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import { GoogleAnalytics } from '@next/third-parties/google'
+// Google Analytics removed
 import { QueryProvider } from "@/components/shared/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 // CLERK DISABLED - commented out to remove auth dependency
@@ -84,7 +84,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <GoogleAnalytics gaId="G-RFC55FX414" />
+
           <NuqsAdapter>
             <QueryProvider>
               {children}
