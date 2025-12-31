@@ -11,6 +11,7 @@ import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { getTextDirection } from "@/lib/rtl";
 import { sanitizeHtml, sanitizeText } from "@/lib/sanitize-ads";
+import { scrubUrl } from "@/lib/privacy";
 
 const logger = createLogger('api:article');
 
@@ -653,7 +654,7 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       const error = fromError(validationResult.error);
       const debugSmryUrl = url ? buildSmryUrl(url, source ?? "fetch-fast") : undefined;
-      logger.error({ error: error.toString(), smryUrl: debugSmryUrl, url, source }, 'Validation error - Full URL for debugging');
+      logger.error({ error: error.toString(), smryUrl: scrubUrl(debugSmryUrl), url: scrubUrl(url), source }, 'Validation error - Full URL for debugging');
       return NextResponse.json(
         ErrorResponseSchema.parse({
           error: error.toString(),
@@ -673,16 +674,16 @@ export async function GET(request: NextRequest) {
       action: '[CACHE_DEBUG]',
       step: 'request_received',
       details: {
-        rawUrl: url,
-        validatedUrl,
+        rawUrl: scrubUrl(url),
+        validatedUrl: scrubUrl(validatedUrl),
         source: validatedSource,
-        smryUrl
+        smryUrl: scrubUrl(smryUrl)
       }
     }, 'Cache Debug: Article Request Received');
 
     // Jina.ai is handled by a separate endpoint (/api/jina) for client-side fetching
     if (validatedSource === "jina.ai") {
-      logger.warn({ source: validatedSource, smryUrl }, 'Jina.ai source not supported in this endpoint');
+      logger.warn({ source: validatedSource, smryUrl: scrubUrl(smryUrl) }, 'Jina.ai source not supported in this endpoint');
       return NextResponse.json(
         ErrorResponseSchema.parse({
           error: "Jina.ai source is handled client-side. Use /api/jina endpoint instead.",
@@ -692,7 +693,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    logger.info({ source: validatedSource, hostname: new URL(validatedUrl).hostname, smryUrl }, 'API Request');
+    logger.info({ source: validatedSource, hostname: new URL(validatedUrl).hostname, smryUrl: scrubUrl(smryUrl) }, 'API Request');
 
     const urlWithSource = getUrlWithSource(validatedSource, validatedUrl);
     const cacheKey = `${validatedSource}:${validatedUrl}`;
@@ -796,7 +797,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch fresh data
-    logger.info({ source: validatedSource, smryUrl }, 'Fetching fresh data');
+    logger.info({ source: validatedSource, smryUrl: scrubUrl(smryUrl) }, 'Fetching fresh data');
     const result = await fetchArticle(urlWithSource, validatedSource, validatedUrl);
 
     if ("error" in result) {
@@ -806,8 +807,8 @@ export async function GET(request: NextRequest) {
         errorType: appError.type,
         message: appError.message,
         hasDebugContext: !!appError.debugContext,
-        smryUrl,
-        urlWithSource,
+        smryUrl: scrubUrl(smryUrl),
+        urlWithSource: scrubUrl(urlWithSource),
       }, 'Fetch failed - Full URL for debugging');
 
       // Include cacheURL in error details so frontend can show the actual URL that was attempted
@@ -952,8 +953,8 @@ export async function GET(request: NextRequest) {
 
     logger.error({
       error,
-      smryUrl: debugSmryUrl,
-      url,
+      smryUrl: scrubUrl(debugSmryUrl),
+      url: scrubUrl(url),
       source,
     }, 'Unexpected error in API route - Full URL for debugging');
 

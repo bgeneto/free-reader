@@ -6,6 +6,8 @@ import { z } from "zod";
 import { createLogger } from "@/lib/logger";
 import { redis } from "@/lib/redis";
 import { extractArticleUrl } from "@/lib/validation/url";
+import { hashIp, scrubUrl } from "@/lib/privacy";
+
 // CLERK DISABLED - auth import commented out
 // import { auth } from "@clerk/nextjs/server";
 
@@ -154,15 +156,15 @@ export async function POST(request: NextRequest) {
     logger.debug({
       action: '[CACHE_DEBUG]',
       step: 'request_received',
-      details: { url, normalizedUrl, language, source }
+      details: { url: scrubUrl(url), normalizedUrl: scrubUrl(normalizedUrl), language, source }
     }, 'Cache Debug: Request Received');
 
     logger.debug({
-      clientIp,
+      clientIp: hashIp(clientIp),
       language,
       source,
       contentLength: content.length,
-      url: normalizedUrl
+      url: scrubUrl(normalizedUrl)
     }, 'Request details');
 
     // Check cache FIRST (before rate limiting)
@@ -273,7 +275,7 @@ export async function POST(request: NextRequest) {
         );
 
         if (!dailySuccess) {
-          logger.warn({ clientIp, dailyLimit }, 'Daily rate limit exceeded');
+          logger.warn({ clientIp: hashIp(clientIp), dailyLimit }, 'Daily rate limit exceeded');
           return NextResponse.json(
             { error: `Your daily limit of ${dailyLimit} summaries has been reached. Please return tomorrow.` },
             { status: 429 }
@@ -281,7 +283,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (!minuteSuccess) {
-          logger.warn({ clientIp }, 'Minute rate limit exceeded');
+          logger.warn({ clientIp: hashIp(clientIp) }, 'Minute rate limit exceeded');
           return NextResponse.json(
             { error: "Your limit of 6 summaries per minute has been reached. Please slow down." },
             { status: 429 }
@@ -290,10 +292,10 @@ export async function POST(request: NextRequest) {
       } catch (redisError) {
         // If Redis fails, log the error but allow the request to proceed
         // This ensures that Redis outages don't break the summary feature
-        logger.warn({ error: redisError, clientIp }, 'Redis rate limiting failed/timed out, allowing request');
+        logger.warn({ error: redisError, clientIp: hashIp(clientIp) }, 'Redis rate limiting failed/timed out, allowing request');
       }
     } else if (isPremium) {
-      logger.debug({ clientIp }, 'Premium user - skipping rate limits');
+      logger.debug({ clientIp: hashIp(clientIp) }, 'Premium user - skipping rate limits');
     }
 
     // Content length is already validated by schema (minimum 2000 characters)
