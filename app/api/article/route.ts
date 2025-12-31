@@ -60,8 +60,8 @@ function getUrlWithSource(source: string, url: string): string {
   switch (source) {
     case "wayback":
       return `https://web.archive.org/web/2/${url}`;
-    case "smry-fast":
-    case "smry-slow":
+    case "fetch-fast":
+    case "fetch-slow":
     default:
       return url;
   }
@@ -69,7 +69,7 @@ function getUrlWithSource(source: string, url: string): string {
 
 function buildSmryUrl(url: string, source?: string | null): string {
   const siteUrl = process.env.NEXT_PUBLIC_URL || "https://smry.ai";
-  if (!source || source === "smry-fast") {
+  if (!source || source === "fetch-fast") {
     return `${siteUrl}/${url}`;
   }
 
@@ -268,14 +268,14 @@ async function fetchArticleWithSmryFast(
 
   try {
     // Strategy 1: Try with browser headers first
-    logger.info({ source: "smry-fast", hostname, strategy: "browser" }, 'Fetching with browser emulation');
+    logger.info({ source: "fetch-fast", hostname, strategy: "browser" }, 'Fetching with browser emulation');
 
     let result = await tryFetchWithStrategy(url, "browser");
 
     // If blocked (401/403/429), retry with Googlebot strategy
     if ("blocked" in result && result.blocked) {
       logger.info(
-        { source: "smry-fast", hostname, blockedStatus: result.status, nextStrategy: "googlebot" },
+        { source: "fetch-fast", hostname, blockedStatus: result.status, nextStrategy: "googlebot" },
         `Browser blocked (${result.status}), retrying with Googlebot`
       );
 
@@ -288,7 +288,7 @@ async function fetchArticleWithSmryFast(
     // Check final result
     if ("blocked" in result || "status" in result) {
       const status: number = ("status" in result && typeof result.status === "number") ? result.status : 500;
-      logger.error({ source: "smry-fast", status, hostname }, 'All fetch strategies failed');
+      logger.error({ source: "fetch-fast", status, hostname }, 'All fetch strategies failed');
       return {
         error: createNetworkError(
           `HTTP ${status} error when fetching article`,
@@ -302,14 +302,14 @@ async function fetchArticleWithSmryFast(
     const { html, strategy } = result;
 
     if (!html || html.length < 100) {
-      logger.warn({ source: "smry-fast", htmlLength: html?.length || 0 }, 'Received empty HTML content');
+      logger.warn({ source: "fetch-fast", htmlLength: html?.length || 0 }, 'Received empty HTML content');
       return {
-        error: createParseError('Received empty HTML content', 'smry-fast'),
+        error: createParseError('Received empty HTML content', 'fetch-fast'),
       };
     }
 
     logger.debug(
-      { source: "smry-fast", hostname, strategy, htmlLength: html.length },
+      { source: "fetch-fast", hostname, strategy, htmlLength: html.length },
       `Successfully fetched with ${strategy} strategy`
     );
 
@@ -318,9 +318,9 @@ async function fetchArticleWithSmryFast(
     const parsed = reader.parse();
 
     if (!parsed || !parsed.content || !parsed.textContent) {
-      logger.warn({ source: "smry-fast", strategy }, 'Readability extraction failed');
+      logger.warn({ source: "fetch-fast", strategy }, 'Readability extraction failed');
       return {
-        error: createParseError('Failed to extract article content with Readability', 'smry-fast'),
+        error: createParseError('Failed to extract article content with Readability', 'fetch-fast'),
       };
     }
 
@@ -357,11 +357,11 @@ async function fetchArticleWithSmryFast(
 
     if (!validationResult.success) {
       const validationError = fromError(validationResult.error);
-      logger.error({ source: "smry-fast", validationError: validationError.toString() }, 'Article validation failed');
+      logger.error({ source: "fetch-fast", validationError: validationError.toString() }, 'Article validation failed');
       return {
         error: createParseError(
           `Invalid article: ${validationError.toString()}`,
-          'smry-fast',
+          'fetch-fast',
           validationError
         ),
       };
@@ -369,7 +369,7 @@ async function fetchArticleWithSmryFast(
 
     const validatedArticle = validationResult.data;
     logger.info(
-      { source: "smry-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy },
+      { source: "fetch-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy },
       'Article fetched and parsed successfully'
     );
 
@@ -378,7 +378,7 @@ async function fetchArticleWithSmryFast(
       cacheURL: url,
     };
   } catch (error) {
-    logger.error({ source: "smry-fast", hostname, error }, 'Fetch exception');
+    logger.error({ source: "fetch-fast", hostname, error }, 'Fetch exception');
     return {
       error: createNetworkError('Failed to fetch article directly', url, undefined, error),
     };
@@ -539,7 +539,7 @@ async function fetchArticleWithWayback(
 }
 
 /**
- * Fetch and parse article using Diffbot (for smry-slow and wayback sources)
+ * Fetch and parse article using Diffbot (for fetch-slow and wayback sources)
  */
 async function fetchArticleWithDiffbotWrapper(
   urlWithSource: string,
@@ -623,9 +623,9 @@ async function fetchArticle(
   originalUrl?: string
 ): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
   switch (source) {
-    case "smry-fast":
+    case "fetch-fast":
       return fetchArticleWithSmryFast(urlWithSource);
-    case "smry-slow":
+    case "fetch-slow":
       return fetchArticleWithDiffbotWrapper(urlWithSource, source);
     case "wayback":
       // Use direct fetch from archive.org instead of Diffbot
@@ -652,7 +652,7 @@ export async function GET(request: NextRequest) {
 
     if (!validationResult.success) {
       const error = fromError(validationResult.error);
-      const debugSmryUrl = url ? buildSmryUrl(url, source ?? "smry-fast") : undefined;
+      const debugSmryUrl = url ? buildSmryUrl(url, source ?? "fetch-fast") : undefined;
       logger.error({ error: error.toString(), smryUrl: debugSmryUrl, url, source }, 'Validation error - Full URL for debugging');
       return NextResponse.json(
         ErrorResponseSchema.parse({
@@ -947,7 +947,7 @@ export async function GET(request: NextRequest) {
     // Try to extract URL info for better debugging
     const searchParams = request.nextUrl.searchParams;
     const url = searchParams.get("url");
-    const source = searchParams.get("source") || "smry-fast";
+    const source = searchParams.get("source") || "fetch-fast";
     const debugSmryUrl = url ? buildSmryUrl(url, source) : undefined;
 
     logger.error({

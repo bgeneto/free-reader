@@ -26,6 +26,30 @@ const logger = createLogger('api:summary');
 // Default model if not specified in env
 const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
 
+// Timeouts
+const REDIS_TIMEOUT_MS = 5000; // 5 seconds for Redis operations
+const AI_TIMEOUT_MS = 45000;  // 45 seconds to wait for AI stream to start/complete
+
+// Helper to wrap promises with a timeout
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
+  let timeoutHandle: NodeJS.Timeout;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutHandle!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutHandle!);
+    throw error;
+  }
+}
+
 // Request schema for useCompletion
 const SummaryRequestSchema = z.object({
   prompt: z.string().min(400, "Content must be at least 400 characters"),
@@ -33,7 +57,7 @@ const SummaryRequestSchema = z.object({
   url: z.string().optional(),
   ip: z.string().optional(),
   language: z.string().optional().default("en"),
-  source: z.string().optional().default("smry-fast"), // Source tab for cache differentiation
+  source: z.string().optional().default("fetch-fast"), // Source tab for cache differentiation
 });
 
 // Base summary prompt template
@@ -162,7 +186,11 @@ export async function POST(request: NextRequest) {
         step: 'redis_get_start'
       }, 'Cache Debug: Attempting Redis GET');
 
-      cached = await redis.get<string>(cacheKey);
+      cached = await withTimeout(
+        redis.get<string>(cacheKey),
+        REDIS_TIMEOUT_MS,
+        'Redis GET'
+      );
 
       logger.debug({
         action: '[CACHE_DEBUG]',
@@ -190,7 +218,7 @@ export async function POST(request: NextRequest) {
       }, 'Cache Debug: Redis GET Error');
 
       // If Redis cache retrieval fails, log it but proceed to generate the summary
-      logger.warn({ error: redisError }, 'Redis cache retrieval failed, will generate fresh summary');
+      logger.warn({ error: redisError }, 'Redis cache retrieval failed/timed out, will generate fresh summary');
     }
 
     logger.debug({ cacheKey }, 'Cache miss - will generate new summary');
@@ -217,21 +245,31 @@ export async function POST(request: NextRequest) {
 
         const dailyLimit = parseInt(envLimit || '20', 10);
 
-        const dailyRatelimit = new Ratelimit({
-          redis: redis,
-          limiter: Ratelimit.slidingWindow(dailyLimit, "1 d"),
-        });
+        // We wrap rate limiting in timeout too, since it depends on Redis
+        const checkRateLimits = async () => {
+          const dailyRatelimit = new Ratelimit({
+            redis: redis,
+            limiter: Ratelimit.slidingWindow(dailyLimit, "1 d"),
+          });
 
-        const minuteRatelimit = new Ratelimit({
-          redis: redis,
-          limiter: Ratelimit.slidingWindow(6, "1 m"),
-        });
+          const minuteRatelimit = new Ratelimit({
+            redis: redis,
+            limiter: Ratelimit.slidingWindow(6, "1 m"),
+          });
 
-        const { success: dailySuccess } = await dailyRatelimit.limit(
-          `ratelimit_daily_${clientIp}`
-        );
-        const { success: minuteSuccess } = await minuteRatelimit.limit(
-          `ratelimit_minute_${clientIp}`
+          // Run in parallel
+          const [dailyResult, minuteResult] = await Promise.all([
+            dailyRatelimit.limit(`ratelimit_daily_${clientIp}`),
+            minuteRatelimit.limit(`ratelimit_minute_${clientIp}`)
+          ]);
+
+          return { dailySuccess: dailyResult.success, minuteSuccess: minuteResult.success };
+        };
+
+        const { dailySuccess, minuteSuccess } = await withTimeout(
+          checkRateLimits(),
+          REDIS_TIMEOUT_MS,
+          'Rate Limit Check'
         );
 
         if (!dailySuccess) {
@@ -252,7 +290,7 @@ export async function POST(request: NextRequest) {
       } catch (redisError) {
         // If Redis fails, log the error but allow the request to proceed
         // This ensures that Redis outages don't break the summary feature
-        logger.warn({ error: redisError, clientIp }, 'Redis rate limiting failed, allowing request');
+        logger.warn({ error: redisError, clientIp }, 'Redis rate limiting failed/timed out, allowing request');
       }
     } else if (isPremium) {
       logger.debug({ clientIp }, 'Premium user - skipping rate limits');
@@ -271,21 +309,19 @@ export async function POST(request: NextRequest) {
     // Variable to manually accumulate text if onFinish's text is empty
     let fullText = "";
 
+    // Create an abort controller for the stream
+    const abortController = new AbortController();
+
+    // Set a timeout to abort the stream if it takes too long
+    // Note: This is an overall timeout for the stream initialization/first chunks
+    // It's not a perfect "total duration" timeout because streamText keeps the connection open
+    setTimeout(() => {
+      // Only abort if we haven't finished (though checking if finished here is tricky without external state)
+      // The AbortController doesn't hurt if the stream is already done
+      abortController.abort();
+    }, AI_TIMEOUT_MS);
+
     // Using OpenRouter's free tier model with automatic provider fallback
-    // Primary model: openai/gpt-oss-20b:free (20B parameters)
-    // - Free tier with rate limits (100-200 requests/day depending on account credits)
-    // - OpenRouter automatically handles provider failover for high uptime
-    //
-    // To add model-level fallback, you can:
-    // 1. Use OpenRouter's native 'models' array parameter (requires custom fetch)
-    // 2. Implement try-catch with fallback models (see OPENROUTER_MIGRATION.md)
-    // 3. Use different models for different use cases
-    //
-    // Alternative free models:
-    // - meta-llama/llama-3.2-3b-instruct:free (faster, smaller)
-    // - google/gemma-2-9b-it:free (better instruction following)
-    // - qwen/qwen-2.5-7b-instruct:free (strong reasoning)
-    // Browse all: https://openrouter.ai/models?max_price=0
     const result = streamText({
       model: openai(process.env.SUMMARIZATION_MODEL || DEFAULT_MODEL),
       messages: [
@@ -294,6 +330,7 @@ export async function POST(request: NextRequest) {
           content: userPrompt.replace("{text}", content.substring(0, 6000)),
         },
       ],
+      abortSignal: abortController.signal,
       // Manually accumulate text because onFinish seems to receive empty text in some configurations
       onChunk: async ({ chunk }) => {
         if (chunk.type === 'text-delta') {
@@ -311,6 +348,7 @@ export async function POST(request: NextRequest) {
           accumulatedTextLength: fullText.length,
           finalTextLength: validationText.length
         }, 'Cache Debug: Stream Finished');
+
         // Cache the complete summary after streaming finishes
         // Use 'after' to ensure this background task completes even if the response is closed
         after(async () => {
@@ -342,8 +380,15 @@ export async function POST(request: NextRequest) {
               step: 'redis_set_start',
               cacheKey
             }, 'Cache Debug: Attempting Redis SET');
+
             // Cache for 30 days (2592000 seconds)
-            await redis.set(cacheKey, validationText, { ex: 2592000 });
+            // Wrap in timeout as well
+            await withTimeout(
+              redis.set(cacheKey, validationText, { ex: 2592000 }),
+              REDIS_TIMEOUT_MS,
+              'Redis SET'
+            );
+
             logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'redis_set_success',
@@ -371,10 +416,17 @@ export async function POST(request: NextRequest) {
       step: 'fatal_api_error',
       error: error
     }, 'Cache Debug: Fatal Error');
-    logger.error({ error }, 'Unexpected error');
+
+    // Distinguish between timeout and other errors
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+    const isTimeout = errorMessage.includes("timed out");
+    const statusCode = isTimeout ? 504 : 500; // 504 Gateway Timeout
+
+    logger.error({ error, isTimeout }, 'Unexpected error / timeout');
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "An unexpected error occurred" },
-      { status: 500 }
+      { error: isTimeout ? "Request timed out. Please try again." : errorMessage },
+      { status: statusCode }
     );
   }
 }

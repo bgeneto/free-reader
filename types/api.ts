@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NormalizedUrlSchema } from "@/lib/validation/url";
 
 // Source type
-export const SOURCES = ["smry-fast", "smry-slow", "wayback", "jina.ai"] as const;
+export const SOURCES = ["fetch-fast", "fetch-slow", "wayback", "jina.ai"] as const;
 export const SourceSchema = z.enum(SOURCES);
 export type Source = z.infer<typeof SourceSchema>;
 

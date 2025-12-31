@@ -5,7 +5,7 @@ import { articleAPI } from "@/lib/api/client";
 import { ArticleResponse, Source } from "@/types/api";
 import { fetchJinaArticle } from "@/lib/api/jina";
 
-const SERVER_SOURCES = ["smry-fast", "smry-slow", "wayback"] as const satisfies readonly Source[];
+const SERVER_SOURCES = ["fetch-fast", "fetch-slow", "wayback"] as const satisfies readonly Source[];
 
 /**
  * Custom hook to fetch Jina article via server-side endpoint
@@ -50,7 +50,7 @@ function useJinaArticle(
  * Quick, Precise, and Wayback are fetched in parallel automatically
  */
 export function useArticles(url: string) {
-  // Fetch server-side sources (smry-fast, smry-slow, wayback) in parallel
+  // Fetch server-side sources (fetch-fast, fetch-slow, wayback) in parallel
   const serverQueries = useQueries({
     queries: SERVER_SOURCES.map((source) => ({
       queryKey: ["article", source, url],
@@ -67,8 +67,8 @@ export function useArticles(url: string) {
 
   // Map queries to a more convenient structure
   const results: Record<Source, UseQueryResult<ArticleResponse, Error>> = {
-    "smry-fast": serverQueries[0] as UseQueryResult<ArticleResponse, Error>,
-    "smry-slow": serverQueries[1] as UseQueryResult<ArticleResponse, Error>,
+    "fetch-fast": serverQueries[0] as UseQueryResult<ArticleResponse, Error>,
+    "fetch-slow": serverQueries[1] as UseQueryResult<ArticleResponse, Error>,
     wayback: serverQueries[2] as UseQueryResult<ArticleResponse, Error>,
     "jina.ai": jinaQuery,
   };

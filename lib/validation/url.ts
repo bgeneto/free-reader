@@ -139,10 +139,10 @@ const APP_QUERY_PARAMS = ['source', 'view', 'sidebar'];
  * This ensures consistent cache keys regardless of how the user accessed the page.
  * 
  * Example:
- *  Input:  "https://example.com/article?source=smry-fast&view=markdown&sidebar=true"
+ *  Input:  "https://example.com/article?source=fetch-fast&view=markdown&sidebar=true"
  *  Output: "https://example.com/article"
  * 
- *  Input:  "https://example.com/article/?id=123&source=smry-fast"
+ *  Input:  "https://example.com/article/?id=123&source=fetch-fast"
  *  Output: "https://example.com/article?id=123"
  */
 export function extractArticleUrl(inputUrl: string): string {

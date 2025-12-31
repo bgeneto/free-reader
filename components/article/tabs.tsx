@@ -10,15 +10,15 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Quick",
-  "smry-slow": "Precise",
+  "fetch-fast": "Quick",
+  "fetch-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina.ai",
 };
 
 const MOBILE_SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Quick",
-  "smry-slow": "Precise",
+  "fetch-fast": "Quick",
+  "fetch-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina",
 };
@@ -104,15 +104,15 @@ const ArrowTabs: React.FC<TabProps> = ({
   const tabsId = React.useId();
 
   const counts: Record<Source, number | undefined> = {
-    "smry-fast": results["smry-fast"].data?.article?.length,
-    "smry-slow": results["smry-slow"].data?.article?.length,
+    "fetch-fast": results["fetch-fast"].data?.article?.length,
+    "fetch-slow": results["fetch-slow"].data?.article?.length,
     "wayback": results.wayback.data?.article?.length,
     "jina.ai": results["jina.ai"].data?.article?.length,
   };
 
   const loadingStates: Record<Source, boolean> = {
-    "smry-fast": results["smry-fast"].isLoading,
-    "smry-slow": results["smry-slow"].isLoading,
+    "fetch-fast": results["fetch-fast"].isLoading,
+    "fetch-slow": results["fetch-slow"].isLoading,
     "wayback": results.wayback.isLoading,
     "jina.ai": results["jina.ai"].isLoading,
   };
@@ -150,18 +150,18 @@ const ArrowTabs: React.FC<TabProps> = ({
           />
         </div>
 
-        <TabsContent value={"smry-fast"}>
+        <TabsContent value={"fetch-fast"}>
           <ArticleContent
-            query={results["smry-fast"]}
-            source="smry-fast"
+            query={results["fetch-fast"]}
+            source="fetch-fast"
             url={url}
             viewMode={viewMode}
           />
         </TabsContent>
-        <TabsContent value={"smry-slow"}>
+        <TabsContent value={"fetch-slow"}>
           <ArticleContent
-            query={results["smry-slow"]}
-            source="smry-slow"
+            query={results["fetch-slow"]}
+            source="fetch-slow"
             url={url}
             viewMode={viewMode}
           />

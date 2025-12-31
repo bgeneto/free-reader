@@ -470,7 +470,7 @@ async function performDiffbotRequest(
  * - 60 second timeout for slow-loading pages
  * - Automatic retry with exponential backoff for 429 rate limit errors
  */
-export function fetchArticleWithDiffbot(url: string, source: string = 'smry-slow'): ResultAsync<DiffbotArticle, AppError> {
+export function fetchArticleWithDiffbot(url: string, source: string = 'fetch-slow'): ResultAsync<DiffbotArticle, AppError> {
   const debugContext = createDebugContext(url, source);
 
   if (!process.env.DIFFBOT_API_KEY) {

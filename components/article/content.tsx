@@ -53,8 +53,8 @@ export const ArticleContent: React.FC<ArticleContentProps> = ({
         return `https://web.archive.org/web/2/${url}`;
       case "jina.ai":
         return `https://r.jina.ai/${url}`;
-      case "smry-fast":
-      case "smry-slow":
+      case "fetch-fast":
+      case "fetch-slow":
       default:
         return url;
     }

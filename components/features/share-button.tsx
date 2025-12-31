@@ -19,8 +19,8 @@ const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "SMRY";
 
 // Human-readable labels for sources (removes "smry-" prefix)
 const SOURCE_DISPLAY_LABELS: Record<Source, string> = {
-  "smry-fast": "Quick",
-  "smry-slow": "Precise",
+  "fetch-fast": "Quick",
+  "fetch-slow": "Precise",
   "wayback": "Wayback",
   "jina.ai": "Jina.ai",
 };
@@ -60,7 +60,7 @@ export const ShareContent: React.FC<ShareContentProps> = ({
   url,
   articleTitle = "Article",
   articleImage,
-  source = "smry-fast",
+  source = "fetch-fast",
   viewMode = "markdown",
   sidebarOpen = true,
   onActionComplete

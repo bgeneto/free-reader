@@ -96,8 +96,8 @@ export type ResponseItem = {
  */
 async function fetchArticleForMetadata(url: string): Promise<Article | null> {
   try {
-    // Try sources in order: smry-fast, smry-slow, jina.ai, wayback
-    const sources = ["smry-fast", "smry-slow", "jina.ai", "wayback"];
+    // Try sources in order: fetch-fast, fetch-slow, jina.ai, wayback
+    const sources = ["fetch-fast", "fetch-slow", "jina.ai", "wayback"];
 
     // 1. Try to check lightweight metadata cache first
     for (const source of sources) {

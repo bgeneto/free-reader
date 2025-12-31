@@ -49,13 +49,13 @@ function useDailyUsage() {
 type ArticleResults = Record<Source, UseQueryResult<ArticleResponse, Error>>;
 
 const SOURCE_LABELS: Record<Source, string> = {
-  "smry-fast": "Quick",
-  "smry-slow": "Precise",
+  "fetch-fast": "Quick",
+  "fetch-slow": "Precise",
   wayback: "Wayback",
   "jina.ai": "Jina.ai",
 };
 
-const SUMMARY_SOURCES: Source[] = ["smry-fast", "smry-slow", "wayback", "jina.ai"];
+const SUMMARY_SOURCES: Source[] = ["fetch-fast", "fetch-slow", "wayback", "jina.ai"];
 
 interface SummaryFormProps {
   urlProp: string;
@@ -116,6 +116,9 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
   const { completion, complete, isLoading, error } = useCompletion({
     api: '/api/summary',
     streamProtocol: 'text', // Use plain text streaming
+    onError: (err) => {
+      console.error("[SummaryForm] Completion error:", err);
+    },
   });
 
   const handleRegenerate = async (e: React.FormEvent) => {
@@ -143,8 +146,8 @@ export default function SummaryForm({ urlProp, ipProp, articleResults, isOpen = 
     acc[source] = articleResults[source].data?.article?.textContent?.length || 0;
     return acc;
   }, {
-    "smry-fast": 0,
-    "smry-slow": 0,
+    "fetch-fast": 0,
+    "fetch-slow": 0,
     wayback: 0,
     "jina.ai": 0,
   });

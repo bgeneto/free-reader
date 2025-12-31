@@ -82,12 +82,12 @@ describe("isValidUrl", () => {
 
 describe("extractArticleUrl", () => {
   it("removes app-specific query params (source, view, sidebar)", () => {
-    const url = "https://example.com/article?source=smry-fast&view=markdown&sidebar=true";
+    const url = "https://example.com/article?source=fetch-fast&view=markdown&sidebar=true";
     expect(extractArticleUrl(url)).toBe("https://example.com/article");
   });
 
   it("preserves article-specific query params while removing app params", () => {
-    const url = "https://example.com/article?id=123&source=smry-fast&view=markdown";
+    const url = "https://example.com/article?id=123&source=fetch-fast&view=markdown";
     expect(extractArticleUrl(url)).toBe("https://example.com/article?id=123");
   });
 
@@ -102,7 +102,7 @@ describe("extractArticleUrl", () => {
   });
 
   it("normalizes URL while extracting", () => {
-    const url = "example.com/article?source=smry-fast";
+    const url = "example.com/article?source=fetch-fast";
     expect(extractArticleUrl(url)).toBe("https://example.com/article");
   });
 
@@ -112,7 +112,7 @@ describe("extractArticleUrl", () => {
   });
 
   it("handles trailing slash with query params", () => {
-    const url = "https://example.com/article/?id=123&source=smry-fast";
+    const url = "https://example.com/article/?id=123&source=fetch-fast";
     expect(extractArticleUrl(url)).toBe("https://example.com/article?id=123");
   });
 

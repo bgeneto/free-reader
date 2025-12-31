@@ -121,7 +121,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
   const [query, setQuery] = useQueryStates(
     {
       url: parseAsString.withDefault(url),
-      source: parseAsStringLiteral(SOURCES).withDefault("smry-fast"),
+      source: parseAsStringLiteral(SOURCES).withDefault("fetch-fast"),
       view: parseAsStringLiteral(viewModes).withDefault("markdown"),
       sidebar: parseAsBoolean.withDefault(false),
     },
@@ -272,7 +272,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
 
               <ShareButton
                 url={`${siteUrl}/${url}`}
-                source={source || "smry-fast"}
+                source={source || "fetch-fast"}
                 viewMode={viewMode || "markdown"}
                 sidebarOpen={sidebarOpen}
                 articleTitle={articleTitle}
@@ -395,7 +395,7 @@ export function ProxyContent({ url, ip }: ProxyContentProps) {
 
               <ShareButton
                 url={`${siteUrl}/${url}`}
-                source={source || "smry-fast"}
+                source={source || "fetch-fast"}
                 viewMode={viewMode || "markdown"}
                 sidebarOpen={sidebarOpen}
                 articleTitle={articleTitle}

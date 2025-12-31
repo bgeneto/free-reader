@@ -33,7 +33,7 @@ export function ErrorDisplay({ error, onRetry, compact = false, source, original
   const _title = getErrorTitle(error);
   const message = getErrorMessage(error);
   const canRetry = isRetryableError(error) && onRetry;
-  
+
   // Determine appropriate icon and heading
   let Icon = AlertCircle;
   let heading = _title;
@@ -60,22 +60,22 @@ export function ErrorDisplay({ error, onRetry, compact = false, source, original
   // Determine the actual URL to display (prefer originalUrl prop, fallback to error.url if it exists)
   const errorUrl = 'url' in error ? error.url : undefined;
   const displayUrl = originalUrl || errorUrl;
-  
-  // Check if we should show the proxy link (not for smry-fast or smry-slow)
-  const showProxyLink = source && source !== "smry-fast" && source !== "smry-slow";
-  
+
+  // Check if we should show the proxy link (not for fetch-fast or fetch-slow)
+  const showProxyLink = source && source !== "fetch-fast" && source !== "fetch-slow";
+
   // Get the external service URL based on source
   const getExternalUrl = (src: string, url: string) => {
     switch (src) {
-      case "wayback": 
+      case "wayback":
         return `https://web.archive.org/web/2/${encodeURIComponent(url)}`;
-      case "jina.ai": 
+      case "jina.ai":
         return `https://r.jina.ai/${url}`;
-      default: 
+      default:
         return undefined;
     }
   };
-  
+
   // Get source-specific labels
   const getSourceLabel = (src: string) => {
     switch (src) {
