@@ -191,56 +191,125 @@ const GOOGLEBOT_USER_AGENTS = [
   "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 ];
 
-type FetchStrategy = "browser" | "googlebot";
+type FetchStrategy = "browser" | "googlebot" | "google-cache";
+
+/**
+ * Cookie jar for persisting cookies (especially DataDome) across retry attempts
+ */
+interface CookieJar {
+  cookies: Map<string, string>;
+}
+
+/**
+ * Extract cookies from Set-Cookie response header
+ */
+function extractSetCookies(headers: Record<string, string>): Map<string, string> {
+  const cookies = new Map<string, string>();
+  const setCookie = headers['set-cookie'];
+  if (setCookie) {
+    // Parse set-cookie header - handle comma-separated cookies carefully
+    // Cookie values can contain commas, so we split on comma followed by a cookie name pattern
+    const cookieStrings = setCookie.split(/,(?=\s*[a-zA-Z_][a-zA-Z0-9_-]*=)/);
+    for (const cookie of cookieStrings) {
+      // Extract just the name=value part (before any attributes like ; Path=/)
+      const match = cookie.match(/^\s*([^=]+)=([^;]*)/);
+      if (match) {
+        const name = match[1].trim();
+        const value = match[2].trim();
+        // Only store cookies we care about (datadome, cf_clearance, etc.)
+        if (name === 'datadome' || name === 'cf_clearance' || name === '__cf_bm') {
+          cookies.set(name, value);
+        }
+      }
+    }
+  }
+  return cookies;
+}
+
+/**
+ * Build Cookie header string from jar
+ */
+function buildCookieHeader(jar: CookieJar): string | undefined {
+  if (jar.cookies.size === 0) return undefined;
+  return Array.from(jar.cookies.entries())
+    .map(([name, value]) => `${name}=${value}`)
+    .join('; ');
+}
+
+/**
+ * Build Google Cache URL for a given URL
+ */
+function buildGoogleCacheUrl(url: string): string {
+  return `https://webcache.googleusercontent.com/search?q=cache:${encodeURIComponent(url)}&strip=1`;
+}
 
 /**
  * Build headers for a specific fetch strategy
  */
-function buildFetchHeaders(url: string, strategy: FetchStrategy): HeadersInit {
+function buildFetchHeaders(url: string, strategy: FetchStrategy, cookieJar?: CookieJar): HeadersInit {
   const urlObj = new URL(url);
-  const origin = urlObj.origin;
+  const cookieHeader = cookieJar ? buildCookieHeader(cookieJar) : undefined;
 
   if (strategy === "googlebot") {
     // Googlebot headers - simpler, but whitelisted by many sites
     const userAgent = GOOGLEBOT_USER_AGENTS[Math.floor(Math.random() * GOOGLEBOT_USER_AGENTS.length)];
-    return {
+    const headers: Record<string, string> = {
       "User-Agent": userAgent,
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.5",
-      "Accept-Encoding": "gzip, deflate", // Removed br to avoid compression issues
+      "Accept-Encoding": "gzip, deflate",
       "Connection": "keep-alive",
-      // Removed Referer to mimic direct navigation
+    };
+    if (cookieHeader) headers["Cookie"] = cookieHeader;
+    return headers;
+  }
+
+  if (strategy === "google-cache") {
+    // Google Cache - use browser UA but for Google's cache domain
+    const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
+    return {
+      "User-Agent": userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate",
+      "Connection": "keep-alive",
+      "DNT": "1",
+      "Upgrade-Insecure-Requests": "1",
+      // No Sec-Fetch headers for Google Cache to seem like a normal request
     };
   }
 
   // Browser strategy - full Chrome emulation
   const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
-  return {
+  const headers: Record<string, string> = {
     "User-Agent": userAgent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate", // Removed br to avoid compression issues
+    "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
     "DNT": "1",
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none", // Reset to none to mimic direct navigation (address bar)
+    "Sec-Fetch-Site": "none",
     "Sec-Fetch-User": "?1",
     "Upgrade-Insecure-Requests": "1",
     "Cache-Control": "max-age=0",
-    // Removed Sec-CH-UA headers to avoid TLS fingerprint mismatches
-    // Removed Referer to mimic direct navigation
   };
+  // Include accumulated cookies (critical for DataDome bypass on retries)
+  if (cookieHeader) headers["Cookie"] = cookieHeader;
+  return headers;
 }
+
 
 /**
  * Attempt to fetch with a specific strategy
  */
 async function tryFetchWithStrategy(
   url: string,
-  strategy: FetchStrategy
+  strategy: FetchStrategy,
+  cookieJar?: CookieJar
 ): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean; headers?: Record<string, string> }> {
-  const headers = buildFetchHeaders(url, strategy);
+  const headers = buildFetchHeaders(url, strategy, cookieJar);
   const controller = new AbortController();
   const timeoutMs = 35000; // Increased to 35 seconds to handle slow responses/tarpits
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -301,46 +370,118 @@ async function tryFetchWithStrategy(
   }
 }
 
+
 async function fetchArticleWithSmryFast(
   url: string
 ): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
   const hostname = new URL(url).hostname;
 
+  // Cookie jar to persist cookies (especially DataDome) across retry attempts
+  const cookieJar: CookieJar = { cookies: new Map() };
+
+  // Strategy chain: browser → googlebot → google-cache → browser with cookies
+  const strategies: { name: FetchStrategy; targetUrl: string; delay: number }[] = [
+    { name: "browser", targetUrl: url, delay: 0 },
+    { name: "googlebot", targetUrl: url, delay: 200 },
+    { name: "google-cache", targetUrl: buildGoogleCacheUrl(url), delay: 500 },
+    { name: "browser", targetUrl: url, delay: 1000 }, // Final retry with accumulated cookies
+  ];
+
   try {
-    // Strategy 1: Try with browser headers first
-    logger.info({ source: "fetch-fast", hostname, strategy: "browser" }, 'Fetching with browser emulation');
+    let lastStatus: number = 0;
+    let lastResult: { html: string; strategy: FetchStrategy } | null = null;
 
-    let result = await tryFetchWithStrategy(url, "browser");
+    for (let i = 0; i < strategies.length; i++) {
+      const { name, targetUrl, delay } = strategies[i];
+      const isRetryWithCookies = i === strategies.length - 1;
 
-    // If blocked (401/403/429) or timed out (408), retry with Googlebot strategy
-    if (("blocked" in result && result.blocked) || ("status" in result && result.status === 408)) {
-      const status = "status" in result ? result.status : "unknown";
-      logger.info(
-        { source: "fetch-fast", hostname, blockedStatus: status, nextStrategy: "googlebot" },
-        `Browser strategy failed (${status}), retrying with Googlebot`
-      );
+      // Apply delay with jitter (except for first attempt)
+      if (delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 300));
+      }
 
-      // Small delay before retry
-      await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+      // Log the attempt
+      logger.info({
+        source: "fetch-fast",
+        hostname,
+        strategy: name,
+        attempt: i + 1,
+        totalAttempts: strategies.length,
+        cookieCount: cookieJar.cookies.size,
+        isRetryWithCookies,
+      }, `Fetching with ${name}${isRetryWithCookies ? ' (with cookies)' : ''}`);
 
-      result = await tryFetchWithStrategy(url, "googlebot");
+      const result = await tryFetchWithStrategy(targetUrl, name, cookieJar);
+
+      // Accumulate any cookies from the response (even on failure)
+      if ('headers' in result && result.headers) {
+        const newCookies = extractSetCookies(result.headers);
+        if (newCookies.size > 0) {
+          newCookies.forEach((value, key) => cookieJar.cookies.set(key, value));
+          logger.debug({
+            source: "fetch-fast",
+            hostname,
+            strategy: name,
+            newCookies: Array.from(newCookies.keys()),
+            totalCookies: cookieJar.cookies.size,
+          }, 'Accumulated cookies from response');
+        }
+      }
+
+      // Check if we got HTML successfully
+      if ('html' in result) {
+        lastResult = result;
+        break;
+      }
+
+      // Track the status for error reporting
+      if ('status' in result) {
+        lastStatus = result.status;
+      }
+
+      // Determine if we should continue to next strategy
+      const isBlocked = 'blocked' in result && result.blocked;
+      const isTimeout = 'status' in result && result.status === 408;
+
+      if (isBlocked || isTimeout) {
+        const status = 'status' in result ? result.status : 'unknown';
+        const nextStrategy = i < strategies.length - 1 ? strategies[i + 1].name : 'none';
+
+        logger.info({
+          source: "fetch-fast",
+          hostname,
+          blockedStatus: status,
+          nextStrategy,
+          cookiesAccumulated: cookieJar.cookies.size,
+        }, `${name} strategy failed (${status}), ${nextStrategy !== 'none' ? `retrying with ${nextStrategy}` : 'all strategies exhausted'}`);
+
+        continue;
+      }
+
+      // Non-blocking failure (e.g., 404, 500) - don't retry with other strategies
+      break;
     }
 
     // Check final result
-    if ("blocked" in result || "status" in result) {
-      const status: number = ("status" in result && typeof result.status === "number") ? result.status : 500;
-      logger.error({ source: "fetch-fast", status, hostname }, 'All fetch strategies failed');
+    if (!lastResult) {
+      const finalStatus = lastStatus || 500;
+      logger.error({
+        source: "fetch-fast",
+        status: finalStatus,
+        hostname,
+        cookiesAccumulated: cookieJar.cookies.size,
+      }, 'All fetch strategies failed');
       return {
         error: createNetworkError(
-          `HTTP ${status} error when fetching article`,
+          `HTTP ${finalStatus} error when fetching article`,
           url,
-          status
+          finalStatus
         ),
       };
     }
 
     // Successfully got HTML
-    const { html, strategy } = result;
+    const { html, strategy } = lastResult;
 
     if (!html || html.length < 100) {
       logger.warn({ source: "fetch-fast", htmlLength: html?.length || 0 }, 'Received empty HTML content');
@@ -350,7 +491,7 @@ async function fetchArticleWithSmryFast(
     }
 
     logger.debug(
-      { source: "fetch-fast", hostname, strategy, htmlLength: html.length },
+      { source: "fetch-fast", hostname, strategy, htmlLength: html.length, cookiesUsed: cookieJar.cookies.size },
       `Successfully fetched with ${strategy} strategy`
     );
 
@@ -410,7 +551,7 @@ async function fetchArticleWithSmryFast(
 
     const validatedArticle = validationResult.data;
     logger.info(
-      { source: "fetch-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy },
+      { source: "fetch-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy, cookiesUsed: cookieJar.cookies.size },
       'Article fetched and parsed successfully'
     );
 
@@ -425,6 +566,7 @@ async function fetchArticleWithSmryFast(
     };
   }
 }
+
 
 /**
  * Fetch article directly from Wayback Machine (archive.org) without using Diffbot
