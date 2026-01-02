@@ -324,8 +324,10 @@ async function tryFetchWithStrategy(
 ): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean; headers?: Record<string, string> }> {
   const headers = buildFetchHeaders(url, strategy, cookieJar);
   const controller = new AbortController();
-  const timeoutMs = 35000; // Overall request timeout
-  const bodyTimeoutMs = 10000; // Tarpit detection: abort if body doesn't arrive within 10s of response
+  // Reduced from 35s to 15s - sites that tarpit from the start should fail faster
+  // so we can try other strategies sooner
+  const timeoutMs = 15000; // Overall request timeout (headers + body)
+  const bodyTimeoutMs = 10000; // Tarpit detection: abort if body doesn't arrive within 10s of headers
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const startTime = Date.now();
 
