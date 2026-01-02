@@ -252,7 +252,7 @@ function extractWithReadability(html: string, url: string, debugContext: DebugCo
 
     for (const selector of contentSelectors) {
       const container = doc.querySelector(selector);
-      if (container && container.textContent && container.textContent.length > 500) {
+      if (container && container.textContent && container.textContent.length > 900) {
         logger.debug({ selector, contentLength: container.textContent.length }, 'Found article container');
 
         // Create a clean document with just the article content
@@ -265,7 +265,7 @@ function extractWithReadability(html: string, url: string, debugContext: DebugCo
         const reader = new Readability(cleanDoc);
         const article = reader.parse();
 
-        if (article && article.textContent && article.textContent.length > 500) {
+        if (article && article.textContent && article.textContent.length > 900) {
           // Validate Readability result
           const validationResult = ReadabilityArticleSchema.safeParse(article);
 

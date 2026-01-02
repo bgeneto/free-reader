@@ -792,7 +792,7 @@ export async function GET(request: NextRequest) {
         } else {
           const article = cacheValidation.data;
 
-          if (article.length > 500 && article.htmlContent) {
+          if (article.length > 900 && article.htmlContent) {
             logger.debug({
               action: '[CACHE_DEBUG]',
               step: 'cache_hit_valid',
@@ -822,7 +822,7 @@ export async function GET(request: NextRequest) {
             });
 
             return NextResponse.json(response);
-          } else if (article.length > 500 && !article.htmlContent) {
+          } else if (article.length > 900 && !article.htmlContent) {
             logger.warn({
               action: '[CACHE_DEBUG]',
               step: 'cache_skip_missing_html',
@@ -834,9 +834,9 @@ export async function GET(request: NextRequest) {
               action: '[CACHE_DEBUG]',
               step: 'cache_skip_short',
               length: article.length,
-              threshold: 500,
+              threshold: 900,
               hasHtml: !!article.htmlContent
-            }, 'Cache hit SKIPPED: Article too short (< 500 chars)');
+            }, 'Cache hit SKIPPED: Article too short (< 900 chars)');
           }
         }
       }

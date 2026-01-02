@@ -363,6 +363,7 @@ async function fetchFromJinaPremium(
                 'X-Token-Budget': '85000',
                 'X-With-Iframe': 'true',
                 'X-With-Shadow-Dom': 'true',
+                'X-Proxy': 'auto',
                 'Content-Length': Buffer.byteLength(postData)
             }
         };
@@ -384,7 +385,7 @@ async function fetchFromJinaPremium(
                 // Detect stub response: when Jina fails to extract content, it returns just the URL
                 // Pattern: ```markdown\n{"url": "..."}\n``` or similar minimal responses
                 const isStubResponse =
-                    data.length < 500 &&
+                    data.length < 900 &&
                     data.includes('"url"') &&
                     !data.includes('"content"') &&
                     !data.includes('"title"');
@@ -491,7 +492,7 @@ export async function POST(request: NextRequest) {
             if (cachedArticle) {
                 const article = CachedArticleSchema.parse(cachedArticle);
 
-                if (article.length > 4000) {
+                if (article.length > 900) {
                     logger.debug({ hostname: extractHostname(url), length: article.length }, "Jina cache hit");
 
                     return NextResponse.json(
