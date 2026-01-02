@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as https from "https";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { createLogger } from "@/lib/logger";
@@ -341,64 +342,81 @@ async function fetchFromJinaPremium(
     url: string,
     apiKey: string
 ): Promise<CachedArticle | { error: string; status?: number }> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), JINA_TIMEOUT_MS);
-
-    try {
+    return new Promise((resolve) => {
         logger.info(
             { hostname: extractHostname(url), mode: "PREMIUM", hasApiKey: true },
             "🔑 Fetching with Jina PREMIUM API (cf-browser-rendering + readerlm-v2)"
         );
 
-        const response = await fetch(`https://r.jina.ai/${url}`, {
-            method: "GET",
+        const postData = JSON.stringify({ url });
+        const options = {
+            hostname: 'r.jina.ai',
+            port: 443,
+            path: '/',
+            method: 'POST',
             headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "X-Engine": "browser",
-                "X-Timeout": "15",
-                "X-Token-Budget": "75000",
-                "X-With-Links-Summary": "false"
-            },
-            signal: controller.signal,
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'X-Base': 'final',
+                'X-Engine': 'browser',
+                'X-Timeout': '25',
+                'X-Token-Budget': '85000',
+                'X-With-Iframe': 'true',
+                'X-With-Shadow-Dom': 'true',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                    logger.error({ status: res.statusCode }, "Jina premium API error");
+                    resolve({ error: `Jina API error: ${res.statusCode}`, status: res.statusCode });
+                    return;
+                }
+
+                // Detect stub response: when Jina fails to extract content, it returns just the URL
+                // Pattern: ```markdown\n{"url": "..."}\n``` or similar minimal responses
+                const isStubResponse =
+                    data.length < 500 &&
+                    data.includes('"url"') &&
+                    !data.includes('"content"') &&
+                    !data.includes('"title"');
+
+                if (isStubResponse) {
+                    logger.warn(
+                        { responseLength: data.length },
+                        "⚠️ Jina premium returned stub response (no content extracted), falling back to public API"
+                    );
+                    // Return a special error that signals we should try public API
+                    resolve({ error: "STUB_RESPONSE", status: 206 });
+                    return;
+                }
+
+                resolve(parseJinaResponse(data, url));
+            });
         });
 
-        clearTimeout(timeoutId);
+        req.on('error', (e) => {
+            logger.error({ error: e }, "Jina premium fetch error");
+            resolve({ error: e.message || "Failed to fetch from Jina.ai", status: 500 });
+        });
 
-        if (!response.ok) {
-            logger.error({ status: response.status }, "Jina premium API error");
-            return { error: `Jina API error: ${response.status}`, status: response.status };
-        }
+        req.setTimeout(JINA_TIMEOUT_MS, () => {
+            req.destroy();
+            resolve({ error: `Request timed out after ${JINA_TIMEOUT_MS / 1000} seconds`, status: 408 });
+        });
 
-        const markdown = await response.text();
-
-        // Detect stub response: when Jina fails to extract content, it returns just the URL
-        // Pattern: ```markdown\n{"url": "..."}\n``` or similar minimal responses
-        const isStubResponse =
-            markdown.length < 500 &&
-            markdown.includes('"url"') &&
-            !markdown.includes('"content"') &&
-            !markdown.includes('"title"');
-
-        if (isStubResponse) {
-            logger.warn(
-                { responseLength: markdown.length },
-                "⚠️ Jina premium returned stub response (no content extracted), falling back to public API"
-            );
-            // Return a special error that signals we should try public API
-            return { error: "STUB_RESPONSE", status: 206 };
-        }
-
-        return parseJinaResponse(markdown, url);
-    } catch (error) {
-        clearTimeout(timeoutId);
-
-        if (error instanceof Error && error.name === "AbortError") {
-            return { error: `Request timed out after ${JINA_TIMEOUT_MS / 1000} seconds`, status: 408 };
-        }
-
-        logger.error({ error }, "Jina premium fetch error");
-        return { error: error instanceof Error ? error.message : "Failed to fetch from Jina.ai" };
-    }
+        // Write data to request body
+        req.write(postData);
+        req.end();
+    });
 }
 
 /**

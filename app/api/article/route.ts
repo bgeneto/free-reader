@@ -207,8 +207,9 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy): HeadersInit {
       "User-Agent": userAgent,
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.5",
-      "Accept-Encoding": "gzip, deflate, br",
+      "Accept-Encoding": "gzip, deflate", // Removed br to avoid compression issues
       "Connection": "keep-alive",
+      // Removed Referer to mimic direct navigation
     };
   }
 
@@ -218,19 +219,17 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy): HeadersInit {
     "User-Agent": userAgent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Encoding": "gzip, deflate", // Removed br to avoid compression issues
     "Connection": "keep-alive",
     "DNT": "1",
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-Site": "none", // Reset to none to mimic direct navigation (address bar)
     "Sec-Fetch-User": "?1",
-    "Sec-CH-UA": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-    "Sec-CH-UA-Mobile": "?0",
-    "Sec-CH-UA-Platform": '"Windows"',
     "Upgrade-Insecure-Requests": "1",
     "Cache-Control": "max-age=0",
-    "Referer": origin + "/",
+    // Removed Sec-CH-UA headers to avoid TLS fingerprint mismatches
+    // Removed Referer to mimic direct navigation
   };
 }
 
@@ -243,8 +242,9 @@ async function tryFetchWithStrategy(
 ): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean; headers?: Record<string, string> }> {
   const headers = buildFetchHeaders(url, strategy);
   const controller = new AbortController();
-  const timeoutMs = 25000; // 25 seconds timeout
+  const timeoutMs = 35000; // Increased to 35 seconds to handle slow responses/tarpits
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
 
   try {
     const response = await fetch(url, {
@@ -292,7 +292,8 @@ async function tryFetchWithStrategy(
     clearTimeout(timeoutId);
 
     if (error.name === 'AbortError') {
-      logger.error({ source: "fetch-fast", strategy, url: scrubUrl(url) }, 'Fetch request timed out');
+      const duration = Date.now() - startTime;
+      logger.error({ source: "fetch-fast", strategy, url: scrubUrl(url), duration }, 'Fetch request timed out');
       return { status: 408, blocked: false };
     }
 
