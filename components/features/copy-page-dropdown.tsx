@@ -183,20 +183,20 @@ export function CopyPageDropdown({
     if (source) {
       proxyUrlObj.searchParams.set("source", source);
     }
-    const smryUrl = proxyUrlObj.toString();
+    const fetchUrl = proxyUrlObj.toString();
 
     let aiUrl: string;
     switch (service) {
       case "chatgpt":
-        const chatgptPrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
+        const chatgptPrompt = `Read from '${fetchUrl}' so I can ask questions about it.`;
         aiUrl = `https://chatgpt.com/?hints=search&prompt=${encodeURIComponent(chatgptPrompt)}`;
         break;
       case "claude":
-        const claudePrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
+        const claudePrompt = `Read from '${fetchUrl}' so I can ask questions about it.`;
         aiUrl = `https://claude.ai/new?q=${encodeURIComponent(claudePrompt)}`;
         break;
       case "gemini":
-        const geminiPrompt = `Read from '${smryUrl}' so I can ask questions about it.`;
+        const geminiPrompt = `Read from '${fetchUrl}' so I can ask questions about it.`;
         aiUrl = `https://aistudio.google.com/prompts/new_chat?prompt=${encodeURIComponent(geminiPrompt)}`;
         break;
     }

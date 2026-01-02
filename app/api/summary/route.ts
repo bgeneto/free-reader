@@ -78,7 +78,7 @@ Rules:
 - Do not speculate or infer beyond the text.
 
 Output:
-- Clear, structured, information-dense synthesis only.
+- Clear, structured, information-dense synthesis only in markdown (md) format.
 - No commentary, explanations, or metadata.
 
 Input:
