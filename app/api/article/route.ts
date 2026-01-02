@@ -12,6 +12,7 @@ import { JSDOM } from "jsdom";
 import { getTextDirection } from "@/lib/rtl";
 import { sanitizeHtml, sanitizeText } from "@/lib/sanitize-ads";
 import { scrubUrl } from "@/lib/privacy";
+import { extractArticleUrl } from "@/lib/validation/url";
 
 const logger = createLogger('api:article');
 
@@ -314,6 +315,7 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy, cookieJar?: Coo
 
 /**
  * Attempt to fetch with a specific strategy
+ * Includes tarpit detection: if body read takes too long, abort early
  */
 async function tryFetchWithStrategy(
   url: string,
@@ -322,7 +324,8 @@ async function tryFetchWithStrategy(
 ): Promise<{ html: string; strategy: FetchStrategy } | { status: number; blocked: boolean; headers?: Record<string, string> }> {
   const headers = buildFetchHeaders(url, strategy, cookieJar);
   const controller = new AbortController();
-  const timeoutMs = 35000; // Increased to 35 seconds to handle slow responses/tarpits
+  const timeoutMs = 35000; // Overall request timeout
+  const bodyTimeoutMs = 10000; // Tarpit detection: abort if body doesn't arrive within 10s of response
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const startTime = Date.now();
 
@@ -335,6 +338,8 @@ async function tryFetchWithStrategy(
     });
 
     clearTimeout(timeoutId);
+    const headersReceivedTime = Date.now();
+    const headersLatency = headersReceivedTime - startTime;
 
     // Collect headers for debugging
     const responseHeaders: Record<string, string> = {};
@@ -366,8 +371,50 @@ async function tryFetchWithStrategy(
       return { status: response.status, blocked: false, headers: responseHeaders };
     }
 
-    const html = await response.text();
-    return { html, strategy };
+    // Tarpit detection: set a timeout for reading the body
+    // Some sites (like WaPo) send headers quickly but slow-drip the body
+    const bodyController = new AbortController();
+    const bodyTimeoutId = setTimeout(() => bodyController.abort(), bodyTimeoutMs);
+
+    try {
+      // Race between body read and timeout
+      const html = await Promise.race([
+        response.text(),
+        new Promise<never>((_, reject) => {
+          bodyController.signal.addEventListener('abort', () => {
+            const bodyDuration = Date.now() - headersReceivedTime;
+            reject(new Error(`TARPIT_DETECTED: Body read timed out after ${bodyDuration}ms`));
+          });
+        })
+      ]);
+
+      clearTimeout(bodyTimeoutId);
+
+      logger.debug({
+        source: "fetch-fast",
+        strategy,
+        headersLatency,
+        totalDuration: Date.now() - startTime,
+        htmlLength: html.length,
+      }, 'Fetch completed successfully');
+
+      return { html, strategy };
+    } catch (bodyError: any) {
+      clearTimeout(bodyTimeoutId);
+
+      if (bodyError.message?.startsWith('TARPIT_DETECTED')) {
+        logger.warn({
+          source: "fetch-fast",
+          strategy,
+          url: scrubUrl(url),
+          headersLatency,
+          bodyTimeout: bodyTimeoutMs,
+        }, 'Tarpit detected: body read timed out, aborting early');
+
+        return { status: 408, blocked: true, headers: responseHeaders };
+      }
+      throw bodyError;
+    }
   } catch (error: any) {
     clearTimeout(timeoutId);
 
@@ -380,6 +427,7 @@ async function tryFetchWithStrategy(
     throw error;
   }
 }
+
 
 
 /**
@@ -965,7 +1013,9 @@ export async function GET(request: NextRequest) {
     logger.info({ source: validatedSource, hostname: new URL(validatedUrl).hostname, fetchUrl: scrubUrl(fetchUrl) }, 'API Request');
 
     const urlWithSource = getUrlWithSource(validatedSource, validatedUrl);
-    const cacheKey = `${validatedSource}:${validatedUrl}`;
+    // Use extractArticleUrl to normalize trailing slashes for consistent cache keys
+    const normalizedUrlForCache = extractArticleUrl(validatedUrl);
+    const cacheKey = `${validatedSource}:${normalizedUrlForCache}`;
 
     logger.debug({
       action: '[CACHE_DEBUG]',
