@@ -191,7 +191,39 @@ const GOOGLEBOT_USER_AGENTS = [
   "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 ];
 
-type FetchStrategy = "browser" | "googlebot" | "google-cache";
+type FetchStrategy = "browser" | "googlebot";
+
+/**
+ * Result from a fetch attempt with parsed article for quality comparison
+ */
+interface FetchResult {
+  success: boolean;
+  strategy: FetchStrategy;
+  html?: string;
+  article?: CachedArticle;
+  quality: number;  // Higher = better quality content
+  error?: string;
+}
+
+/**
+ * Calculate quality score for an article
+ * Higher scores indicate more complete/better content
+ */
+function calculateQuality(article: CachedArticle): number {
+  // Primary: textContent length
+  let score = article.textContent.length;
+
+  // Bonus: has byline (+100)
+  if (article.byline) score += 100;
+
+  // Bonus: has publishedTime (+100)  
+  if (article.publishedTime) score += 100;
+
+  // Bonus: has image (+50)
+  if (article.image) score += 50;
+
+  return score;
+}
 
 /**
  * Cookie jar for persisting cookies (especially DataDome) across retry attempts
@@ -237,17 +269,9 @@ function buildCookieHeader(jar: CookieJar): string | undefined {
 }
 
 /**
- * Build Google Cache URL for a given URL
- */
-function buildGoogleCacheUrl(url: string): string {
-  return `https://webcache.googleusercontent.com/search?q=cache:${encodeURIComponent(url)}&strip=1`;
-}
-
-/**
  * Build headers for a specific fetch strategy
  */
 function buildFetchHeaders(url: string, strategy: FetchStrategy, cookieJar?: CookieJar): HeadersInit {
-  const urlObj = new URL(url);
   const cookieHeader = cookieJar ? buildCookieHeader(cookieJar) : undefined;
 
   if (strategy === "googlebot") {
@@ -262,21 +286,6 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy, cookieJar?: Coo
     };
     if (cookieHeader) headers["Cookie"] = cookieHeader;
     return headers;
-  }
-
-  if (strategy === "google-cache") {
-    // Google Cache - use browser UA but for Google's cache domain
-    const userAgent = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
-    return {
-      "User-Agent": userAgent,
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate",
-      "Connection": "keep-alive",
-      "DNT": "1",
-      "Upgrade-Insecure-Requests": "1",
-      // No Sec-Fetch headers for Google Cache to seem like a normal request
-    };
   }
 
   // Browser strategy - full Chrome emulation
@@ -299,6 +308,8 @@ function buildFetchHeaders(url: string, strategy: FetchStrategy, cookieJar?: Coo
   if (cookieHeader) headers["Cookie"] = cookieHeader;
   return headers;
 }
+
+
 
 
 /**
@@ -371,139 +382,25 @@ async function tryFetchWithStrategy(
 }
 
 
-async function fetchArticleWithSmryFast(
-  url: string
-): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
-  const hostname = new URL(url).hostname;
-
-  // Cookie jar to persist cookies (especially DataDome) across retry attempts
-  const cookieJar: CookieJar = { cookies: new Map() };
-
-  // Strategy chain: browser → googlebot → google-cache → browser with cookies
-  const strategies: { name: FetchStrategy; targetUrl: string; delay: number }[] = [
-    { name: "browser", targetUrl: url, delay: 0 },
-    { name: "googlebot", targetUrl: url, delay: 200 },
-    { name: "google-cache", targetUrl: buildGoogleCacheUrl(url), delay: 500 },
-    { name: "browser", targetUrl: url, delay: 1000 }, // Final retry with accumulated cookies
-  ];
+/**
+ * Parse HTML into a validated CachedArticle
+ */
+function parseHtmlToArticle(
+  html: string,
+  url: string,
+  strategy: FetchStrategy
+): CachedArticle | null {
+  if (!html || html.length < 100) {
+    return null;
+  }
 
   try {
-    let lastStatus: number = 0;
-    let lastResult: { html: string; strategy: FetchStrategy } | null = null;
-
-    for (let i = 0; i < strategies.length; i++) {
-      const { name, targetUrl, delay } = strategies[i];
-      const isRetryWithCookies = i === strategies.length - 1;
-
-      // Apply delay with jitter (except for first attempt)
-      if (delay > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 300));
-      }
-
-      // Log the attempt
-      logger.info({
-        source: "fetch-fast",
-        hostname,
-        strategy: name,
-        attempt: i + 1,
-        totalAttempts: strategies.length,
-        cookieCount: cookieJar.cookies.size,
-        isRetryWithCookies,
-      }, `Fetching with ${name}${isRetryWithCookies ? ' (with cookies)' : ''}`);
-
-      const result = await tryFetchWithStrategy(targetUrl, name, cookieJar);
-
-      // Accumulate any cookies from the response (even on failure)
-      if ('headers' in result && result.headers) {
-        const newCookies = extractSetCookies(result.headers);
-        if (newCookies.size > 0) {
-          newCookies.forEach((value, key) => cookieJar.cookies.set(key, value));
-          logger.debug({
-            source: "fetch-fast",
-            hostname,
-            strategy: name,
-            newCookies: Array.from(newCookies.keys()),
-            totalCookies: cookieJar.cookies.size,
-          }, 'Accumulated cookies from response');
-        }
-      }
-
-      // Check if we got HTML successfully
-      if ('html' in result) {
-        lastResult = result;
-        break;
-      }
-
-      // Track the status for error reporting
-      if ('status' in result) {
-        lastStatus = result.status;
-      }
-
-      // Determine if we should continue to next strategy
-      const isBlocked = 'blocked' in result && result.blocked;
-      const isTimeout = 'status' in result && result.status === 408;
-
-      if (isBlocked || isTimeout) {
-        const status = 'status' in result ? result.status : 'unknown';
-        const nextStrategy = i < strategies.length - 1 ? strategies[i + 1].name : 'none';
-
-        logger.info({
-          source: "fetch-fast",
-          hostname,
-          blockedStatus: status,
-          nextStrategy,
-          cookiesAccumulated: cookieJar.cookies.size,
-        }, `${name} strategy failed (${status}), ${nextStrategy !== 'none' ? `retrying with ${nextStrategy}` : 'all strategies exhausted'}`);
-
-        continue;
-      }
-
-      // Non-blocking failure (e.g., 404, 500) - don't retry with other strategies
-      break;
-    }
-
-    // Check final result
-    if (!lastResult) {
-      const finalStatus = lastStatus || 500;
-      logger.error({
-        source: "fetch-fast",
-        status: finalStatus,
-        hostname,
-        cookiesAccumulated: cookieJar.cookies.size,
-      }, 'All fetch strategies failed');
-      return {
-        error: createNetworkError(
-          `HTTP ${finalStatus} error when fetching article`,
-          url,
-          finalStatus
-        ),
-      };
-    }
-
-    // Successfully got HTML
-    const { html, strategy } = lastResult;
-
-    if (!html || html.length < 100) {
-      logger.warn({ source: "fetch-fast", htmlLength: html?.length || 0 }, 'Received empty HTML content');
-      return {
-        error: createParseError('Received empty HTML content', 'fetch-fast'),
-      };
-    }
-
-    logger.debug(
-      { source: "fetch-fast", hostname, strategy, htmlLength: html.length, cookiesUsed: cookieJar.cookies.size },
-      `Successfully fetched with ${strategy} strategy`
-    );
-
     const dom = new JSDOM(html, { url });
     const reader = new Readability(dom.window.document);
     const parsed = reader.parse();
 
     if (!parsed || !parsed.content || !parsed.textContent) {
-      logger.warn({ source: "fetch-fast", strategy }, 'Readability extraction failed');
-      return {
-        error: createParseError('Failed to extract article content with Readability', 'fetch-fast'),
-      };
+      return null;
     }
 
     // Extract language from HTML
@@ -536,27 +433,203 @@ async function fetchArticleWithSmryFast(
     };
 
     const validationResult = CachedArticleSchema.safeParse(articleCandidate);
-
     if (!validationResult.success) {
-      const validationError = fromError(validationResult.error);
-      logger.error({ source: "fetch-fast", validationError: validationError.toString() }, 'Article validation failed');
+      return null;
+    }
+
+    return validationResult.data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Attempt a single fetch strategy and return a FetchResult with quality scoring
+ */
+async function tryFetchAndParse(
+  url: string,
+  strategy: FetchStrategy,
+  cookieJar: CookieJar,
+  hostname: string
+): Promise<FetchResult> {
+  const result = await tryFetchWithStrategy(url, strategy, cookieJar);
+
+  // Accumulate cookies from response (even on failure)
+  if ('headers' in result && result.headers) {
+    const newCookies = extractSetCookies(result.headers);
+    if (newCookies.size > 0) {
+      newCookies.forEach((value, key) => cookieJar.cookies.set(key, value));
+      logger.debug({
+        source: "fetch-fast",
+        hostname,
+        strategy,
+        newCookies: Array.from(newCookies.keys()),
+        totalCookies: cookieJar.cookies.size,
+      }, 'Accumulated cookies from response');
+    }
+  }
+
+  // Check if blocked or failed
+  if ('status' in result) {
+    return {
+      success: false,
+      strategy,
+      quality: 0,
+      error: `HTTP ${result.status}`,
+    };
+  }
+
+  // Got HTML - try to parse it
+  const { html } = result;
+  const article = parseHtmlToArticle(html, url, strategy);
+
+  if (!article) {
+    return {
+      success: false,
+      strategy,
+      html,
+      quality: 0,
+      error: 'Readability extraction failed',
+    };
+  }
+
+  const quality = calculateQuality(article);
+
+  return {
+    success: true,
+    strategy,
+    html,
+    article,
+    quality,
+  };
+}
+
+async function fetchArticleWithFast(
+  url: string
+): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
+  const hostname = new URL(url).hostname;
+
+  // Cookie jar to persist cookies (especially DataDome) across retry attempts
+  const cookieJar: CookieJar = { cookies: new Map() };
+
+  // Collect all successful results for quality comparison
+  const results: FetchResult[] = [];
+
+  try {
+    // Strategy 1: Browser (immediate)
+    logger.info({
+      source: "fetch-fast",
+      hostname,
+      strategy: "browser",
+      attempt: 1,
+      cookieCount: 0,
+    }, 'Fetching with browser');
+
+    const browserResult = await tryFetchAndParse(url, "browser", cookieJar, hostname);
+    results.push(browserResult);
+
+    // If browser succeeded with high quality, return immediately (optimization)
+    if (browserResult.success && browserResult.quality > 3000) {
+      logger.info({
+        source: "fetch-fast",
+        hostname,
+        strategy: "browser",
+        quality: browserResult.quality,
+        earlyReturn: true,
+      }, 'High quality result, returning early');
+
       return {
-        error: createParseError(
-          `Invalid article: ${validationError.toString()}`,
-          'fetch-fast',
-          validationError
+        article: browserResult.article!,
+        cacheURL: url,
+      };
+    }
+
+    // Strategy 2: Googlebot (with delay and cookies)
+    if (!browserResult.success || browserResult.quality < 3000) {
+      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 100));
+
+      logger.info({
+        source: "fetch-fast",
+        hostname,
+        strategy: "googlebot",
+        attempt: 2,
+        cookieCount: cookieJar.cookies.size,
+      }, 'Fetching with googlebot');
+
+      const googlebotResult = await tryFetchAndParse(url, "googlebot", cookieJar, hostname);
+      results.push(googlebotResult);
+    }
+
+    // Strategy 3: Browser retry with accumulated cookies (if we have cookies)
+    if (cookieJar.cookies.size > 0) {
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 200));
+
+      logger.info({
+        source: "fetch-fast",
+        hostname,
+        strategy: "browser",
+        attempt: 3,
+        cookieCount: cookieJar.cookies.size,
+        isRetryWithCookies: true,
+      }, 'Fetching with browser (with cookies)');
+
+      const cookieRetryResult = await tryFetchAndParse(url, "browser", cookieJar, hostname);
+      results.push(cookieRetryResult);
+    }
+
+    // Pick the best result by quality
+    const successfulResults = results.filter(r => r.success && r.article);
+
+    if (successfulResults.length === 0) {
+      // All strategies failed
+      const lastError = results[results.length - 1]?.error || 'Unknown error';
+      logger.error({
+        source: "fetch-fast",
+        hostname,
+        totalAttempts: results.length,
+        cookiesAccumulated: cookieJar.cookies.size,
+        errors: results.map(r => ({ strategy: r.strategy, error: r.error })),
+      }, 'All fetch strategies failed');
+
+      return {
+        error: createNetworkError(
+          `All fetch strategies failed: ${lastError}`,
+          url,
+          500
         ),
       };
     }
 
-    const validatedArticle = validationResult.data;
-    logger.info(
-      { source: "fetch-fast", hostname, title: validatedArticle.title, length: validatedArticle.length, strategy, cookiesUsed: cookieJar.cookies.size },
-      'Article fetched and parsed successfully'
-    );
+    // Sort by quality (descending) and pick the best
+    successfulResults.sort((a, b) => b.quality - a.quality);
+    const bestResult = successfulResults[0];
+
+    // Log quality comparison if we have multiple successful results
+    if (successfulResults.length > 1) {
+      logger.info({
+        source: "fetch-fast",
+        hostname,
+        winner: bestResult.strategy,
+        winnerQuality: bestResult.quality,
+        alternatives: successfulResults.slice(1).map(r => ({
+          strategy: r.strategy,
+          quality: r.quality,
+        })),
+      }, 'Selected best quality result');
+    }
+
+    logger.info({
+      source: "fetch-fast",
+      hostname,
+      title: bestResult.article!.title,
+      length: bestResult.article!.length,
+      strategy: bestResult.strategy,
+      quality: bestResult.quality,
+      cookiesUsed: cookieJar.cookies.size,
+    }, 'Article fetched and parsed successfully');
 
     return {
-      article: validatedArticle,
+      article: bestResult.article!,
       cacheURL: url,
     };
   } catch (error) {
@@ -566,6 +639,7 @@ async function fetchArticleWithSmryFast(
     };
   }
 }
+
 
 
 /**
@@ -820,7 +894,7 @@ async function fetchArticle(
 ): Promise<{ article: CachedArticle; cacheURL: string } | { error: AppError }> {
   switch (source) {
     case "fetch-fast":
-      return fetchArticleWithSmryFast(urlWithSource);
+      return fetchArticleWithFast(urlWithSource);
     case "fetch-slow":
       return fetchArticleWithDiffbotWrapper(urlWithSource, source);
     case "wayback":
