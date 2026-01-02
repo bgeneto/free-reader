@@ -12,7 +12,7 @@
     "@ai-sdk/openai": "^3.0.0",
     "@ai-sdk/react": "^3.0.1",
     "@ai-sdk/rsc": "^2.0.1",
-    "@base-ui/react": "1.0.0-rc.0",
+    "@base-ui/react": "1.0.0",
     "@clerk/nextjs": "^6.36.5",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
