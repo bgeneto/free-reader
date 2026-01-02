@@ -18,7 +18,7 @@ const eslintConfig = [
       // React Hooks rules
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-      
+
       // Unused imports rules
       "no-unused-vars": "off", // Turn off base rule to avoid conflicts
       "@typescript-eslint/no-unused-vars": "off", // Turn off TypeScript rule to avoid conflicts
@@ -37,7 +37,7 @@ const eslintConfig = [
         {
           selector: "JSXAttribute[name.name='asChild']",
           message:
-            "Radix's `asChild` prop is not allowed. We standardize on Base UI (@base-ui-components/react); use its parts + `render={...}` polymorphism (e.g. `<Dialog.Trigger render={<Button variant=\"primary\" />} />`) instead of wrapping children with Radix Slot. See `.cursor/rules` (Base UI quick start) and `DESIGN_PHILOSOPHY.md` for guidance.",
+            "Radix's `asChild` prop is not allowed. We standardize on Base UI (@base-ui/react); use its parts + `render={...}` polymorphism (e.g. `<Dialog.Trigger render={<Button variant=\"primary\" />} />`) instead of wrapping children with Radix Slot. See `.cursor/rules` (Base UI quick start) and `DESIGN_PHILOSOPHY.md` for guidance.",
         },
       ],
     },
